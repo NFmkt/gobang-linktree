@@ -5,7 +5,7 @@ export function YoutubeIcon(props: IconProps) {
   return (
     <IconBase {...props}>
       <rect x="3.5" y="6" width="17" height="12" rx="4" />
-      <path d="M10.5 9.5v5l4.5-2.5z" fill="currentColor" stroke="none" />
+      <path d="M10.5 9.5v5l4.5-2.5z" />
     </IconBase>
   );
 }

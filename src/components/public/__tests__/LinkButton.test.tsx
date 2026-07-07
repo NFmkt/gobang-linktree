@@ -34,6 +34,13 @@ describe("LinkButton", () => {
     render(<LinkButton link={link} />);
     expect(screen.queryByText("보조 설명")).not.toBeInTheDocument();
   });
+
+  it("focus-visible 포커스 링 스타일을 갖는다", () => {
+    render(<LinkButton link={link} />);
+    const anchor = screen.getByRole("link", { name: new RegExp(link.title) });
+    expect(anchor.className).toMatch(/focus-visible:outline/);
+    expect(anchor.className).toMatch(/focus-visible:outline-\[var\(--color-ink\)\]/);
+  });
 });
 
 describe("LinkButton 리스트 렌더", () => {

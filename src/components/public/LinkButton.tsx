@@ -18,7 +18,7 @@ export function LinkButton({ link, delayMs }: LinkButtonProps) {
   return (
     <a
       href={link.url}
-      className="group link-button-enter flex min-h-[56px] w-full items-center gap-3 rounded-[var(--radius-block)] border-[length:var(--block-border-width)] border-[var(--color-ink)] bg-[var(--color-surface)] px-4 py-3 text-[var(--color-ink)] shadow-[var(--shadow-block)] transition-[transform,box-shadow] duration-150 ease-out hover:translate-x-px hover:translate-y-px hover:shadow-[var(--shadow-block-hover)] active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0"
+      className="group link-button-enter flex min-h-[56px] w-full items-center gap-3 rounded-[var(--radius-block)] border-[length:var(--block-border-width)] border-[var(--color-ink)] bg-[var(--color-surface)] px-4 py-3 text-[var(--color-ink)] shadow-[var(--shadow-block)] transition-[transform,box-shadow] duration-150 ease-out hover:translate-x-px hover:translate-y-px hover:shadow-[var(--shadow-block-hover)] active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-ink)]"
       style={delayMs !== undefined ? { animationDelay: `${delayMs}ms` } : undefined}
     >
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-bg)] text-[var(--color-primary-deep)]">

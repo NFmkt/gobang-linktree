@@ -29,4 +29,13 @@ describe("SocialRow", () => {
       expect(screen.getByLabelText(item.label)).toBeInTheDocument();
     }
   });
+
+  it("각 링크가 focus-visible 포커스 링 스타일을 갖는다", () => {
+    render(<SocialRow items={SITE_CONFIG.social} />);
+    for (const item of SITE_CONFIG.social) {
+      const link = screen.getByLabelText(item.label);
+      expect(link.className).toMatch(/focus-visible:outline/);
+      expect(link.className).toMatch(/focus-visible:outline-\[var\(--color-ink\)\]/);
+    }
+  });
 });

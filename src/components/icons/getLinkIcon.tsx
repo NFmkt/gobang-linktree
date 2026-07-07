@@ -14,7 +14,7 @@ import { DefaultLinkIcon } from "./DefaultLinkIcon";
  * `Link.icon` 필드와 `SocialItem.key` 필드 모두 이 헬퍼로 조회한다.
  * 매칭되지 않는 키는 `DefaultLinkIcon`으로 폴백한다.
  */
-const ICON_MAP: Record<string, ComponentType<IconProps>> = {
+export const ICON_MAP: Record<string, ComponentType<IconProps>> = {
   youth: YouthIcon,
   feed: FeedIcon,
   series: SeriesIcon,
@@ -22,6 +22,8 @@ const ICON_MAP: Record<string, ComponentType<IconProps>> = {
   blog: BlogIcon,
   youtube: YoutubeIcon,
 };
+
+export { DefaultLinkIcon };
 
 export function getLinkIcon(key: string): ComponentType<IconProps> {
   return ICON_MAP[key] ?? DefaultLinkIcon;

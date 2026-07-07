@@ -1,11 +1,5 @@
 import type { IconProps } from "./IconBase";
-import { YouthIcon } from "./YouthIcon";
-import { FeedIcon } from "./FeedIcon";
-import { SeriesIcon } from "./SeriesIcon";
-import { HomeIcon } from "./HomeIcon";
-import { BlogIcon } from "./BlogIcon";
-import { YoutubeIcon } from "./YoutubeIcon";
-import { DefaultLinkIcon } from "./DefaultLinkIcon";
+import { ICON_MAP, DefaultLinkIcon } from "./getLinkIcon";
 
 type LinkIconProps = IconProps & {
   /** Link.icon 또는 SocialItem.key 값 */
@@ -15,27 +9,18 @@ type LinkIconProps = IconProps & {
 /**
  * 아이콘 키를 실제 아이콘 컴포넌트로 해석해 렌더하는 래퍼.
  *
- * 정적 분석(react-hooks/static-components)이 "렌더 중 컴포넌트 생성"으로
- * 오탐하는 것을 피하기 위해, 변수에 컴포넌트를 담아 JSX 태그로 쓰는 대신
- * 각 분기에서 고정된 컴포넌트를 직접 JSX로 반환한다. 키 → 컴포넌트 매핑의
- * source of truth는 이 함수이며, `getLinkIcon`은 매핑 자체(테스트/기타 소비처용)를
- * 노출하는 별도 헬퍼로 유지한다.
+ * 키 → 컴포넌트 매핑의 source of truth는 `getLinkIcon.tsx`가 내보내는
+ * `ICON_MAP` 하나뿐이다(`getLinkIcon()` 함수도 동일한 맵을 조회한다).
+ * 이 래퍼는 JSX 태그 자리에 함수 호출 결과가 아닌 맵 프로퍼티를 직접
+ * 인덱싱해 사용함으로써 react-hooks/static-components(컴파일러의 "렌더 중
+ * 컴포넌트 생성" 정적 검사)를 우회한다 — `getLinkIcon(key)`처럼 함수
+ * 호출로 얻은 값을 JSX 태그로 쓰면 컴파일러가 이를 "동적으로 생성된
+ * 컴포넌트"로 오탐하기 때문이다.
  */
 export function LinkIcon({ iconKey, ...props }: LinkIconProps) {
-  switch (iconKey) {
-    case "youth":
-      return <YouthIcon {...props} />;
-    case "feed":
-      return <FeedIcon {...props} />;
-    case "series":
-      return <SeriesIcon {...props} />;
-    case "home":
-      return <HomeIcon {...props} />;
-    case "blog":
-      return <BlogIcon {...props} />;
-    case "youtube":
-      return <YoutubeIcon {...props} />;
-    default:
-      return <DefaultLinkIcon {...props} />;
+  if (iconKey in ICON_MAP) {
+    const Icon = ICON_MAP[iconKey];
+    return <Icon {...props} />;
   }
+  return <DefaultLinkIcon {...props} />;
 }
