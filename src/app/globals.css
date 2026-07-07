@@ -50,3 +50,29 @@ body {
   font-family: var(--font-sans);
   font-feature-settings: "tnum" 1; /* 숫자 tabular-nums — 통계 정렬용 */
 }
+
+/*
+ * 링크 목록 진입 stagger 애니메이션 (S1b).
+ * 각 LinkButton은 style.animationDelay로 30~50ms씩 어긋나게 시작한다.
+ * prefers-reduced-motion 사용자는 모션 없이 즉시 노출된다.
+ */
+@keyframes link-button-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.link-button-enter {
+  animation: link-button-enter 240ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link-button-enter {
+    animation: none;
+  }
+}
