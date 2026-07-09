@@ -5,7 +5,7 @@
 ---
 
 ## 0. 한 줄 요약
-비비드 블루 리디자인 + 코드리뷰 반영 + **S1 Supabase 실연동 + S2 통계 비콘 + S3 관리자 인증 전부 완료 및 커밋됨**(test 83 pass, lint/build clean). 다음은 **S4 관리자 링크 CRUD**부터.
+비비드 블루 리디자인 + 코드리뷰 반영 + **S1 Supabase 실연동 + S2 통계 비콘 + S3 관리자 인증 + S4 관리자 링크 CRUD 전부 완료 및 커밋됨**(test 129 pass, lint/build clean). 다음은 **S5 관리자 사이트 설정**부터.
 
 ---
 
@@ -88,12 +88,22 @@
 - **⚠️ 세션 모델 한계(S4+ 인지 필요)**: 개별 세션 폐기 불가(비번 변경=전원 로그아웃), 서버 측 만료 없음(토큰 자체는 비번 로테이션 전까지 영구 유효, 쿠키 maxAge는 브라우저 측 제한일 뿐). "이 기기만 로그아웃"이 필요해지면 타임스탬프+HMAC 재설계 필요.
 - Minor(비차단): 쿠키명/옵션 상수가 login/logout/proxy.ts 3곳에 중복 — S4에서 관리 라우트 늘면 공유 헬퍼로 추출 고려.
 
-### 3-D. 남은 개발 슬라이스 ([docs/TODO.md](docs/TODO.md))
-S0·S1·S2·S3·S7 완료. 남은 것:
-- [ ] **S4** 관리자 링크 CRUD + 드래그 — S1·S3 완료돼 바로 진행 가능
+### 3-D. S4 관리자 링크 CRUD + 드래그 정렬 — 완료 (2026-07-09)
+계획: [docs/superpowers/plans/2026-07-09-s4-admin-links-crud.md](docs/superpowers/plans/2026-07-09-s4-admin-links-crud.md).
+- `src/app/api/admin/links/{route.ts,[id]/route.ts,reorder/route.ts}` — GET/POST/PATCH/DELETE + 순서 일괄변경, 전부 `createServiceSupabaseClient()`(service_role) 사용, 인증은 기존 `src/proxy.ts`가 담당.
+- `src/components/admin/IconSelect.tsx` — ICON_MAP 8키 드롭다운 + 라이브 미리보기.
+- `src/app/admin/(protected)/links/{page,LinksManager,LinkForm}.tsx` — 목록/토글/삭제/추가/수정 + 드래그 정렬(네이티브 HTML5 DnD, 신규 패키지 없음). `layout.tsx`에 "링크 관리" 네비 링크 추가.
+- `src/lib/admin/reorderLinks.ts` — 드래그 순서 재계산 순수함수.
+- whole-slice 최종 리뷰(opus) = With fixes → 반영 후 커밋 완료. 리뷰 중 발견·수정된 것:
+  - **보안(Important)**: `link.url`이 검증 없이 공개 페이지 `<a href>`로 렌더돼 `javascript:` 스킴 저장형 XSS 경로였음 → `src/lib/links/isSafeLinkUrl.ts`로 http/https/mailto 화이트리스트 검증 추가(POST/PATCH 양쪽).
+  - handleToggleActive/handleDelete/refetch에 가드 없는 fetch(S3에서 두 번 겪은 미처리 예외 패턴 재발) → try/catch + res.ok 체크 + 에러 배너로 수정.
+- Minor 하드닝 후보(비차단): icon 필드 서버측 ICON_MAP 검증 없음(UI만 제약), 드래그 재정렬 API 실패 시 낙관적 업데이트 롤백 없음(에러 배너만 표시).
+
+### 3-E. 남은 개발 슬라이스 ([docs/TODO.md](docs/TODO.md))
+S0·S1·S2·S3·S4·S7 완료. 남은 것:
 - [ ] **S5** 관리자 사이트 설정 — S1·S3 완료돼 바로 진행 가능
 - [ ] **S6** 요약 통계 대시보드 — S2·S3 완료돼 바로 진행 가능 (S2의 아그리게이션 필터 주의사항 §3-B 반영 필수)
-- 관리자 UI는 본 비비드 블루 디자인 시스템을 상속(DESIGN_SYSTEM §9), `/admin` 로그인은 `.env.local`의 `ADMIN_PASSWORD=REDACTED`로 가능.
+- 관리자 UI는 본 비비드 블루 디자인 시스템을 상속(DESIGN_SYSTEM §9), `/admin` 로그인은 `.env.local`의 `ADMIN_PASSWORD=REDACTED`로 가능. `/admin/links`에서 실제 링크 CRUD 가능.
 
 **대기 중 사용자 입력**: Vercel 계정(실 배포 시점에만 필요, 로컬 개발은 이미 가능).
 
@@ -110,6 +120,7 @@ S0·S1·S2·S3·S7 완료. 남은 것:
 - **Tailwind 스캔 범위**: `globals.css`가 `@import "tailwindcss" source("..")`로 `src/`만 스캔하도록 제한돼 있음(2026-07-09 수정). 이 줄을 지우면 리포 루트의 `.md` 문서에 적힌 Tailwind 아무 문법 예시(예: `bg-[var(--color-...)]`)를 후보 클래스로 오인해 CSS 파싱이 깨지고 dev 서버가 500을 낼 수 있다.
 - **`middleware.ts`가 아니라 `proxy.ts`**: Next.js 16.2.10부터 "middleware" 파일 컨벤션이 deprecated고 "proxy"로 바뀜(파일명·export 함수명 둘 다: `middleware.ts`/`export function middleware` → `proxy.ts`/`export function proxy`). `next build` 시 경고 없이 `ƒ Proxy (Middleware)`가 라우트 목록에 뜨는지로 확인 가능. 이 프로젝트의 관리자 라우트 보호 로직은 `src/proxy.ts`에 있다.
 - **`.env.local`**: Supabase URL/anon/service_role + `ADMIN_PASSWORD=REDACTED`. gitignore됨, 새 세션/계정에서는 이 파일이 없으므로 `.env.example` 참고해 재구성하거나 기존 값을 전달받아야 함.
+- **사용자 입력 URL을 `<a href>`로 렌더할 때는 항상 `src/lib/links/isSafeLinkUrl.ts` 같은 스킴 화이트리스트 검증을 거칠 것**: `javascript:`/`data:` 등은 React가 자동으로 막아주지 않는다(escape는 텍스트 콘텐츠에만 적용됨). S5(사이트 설정)에서 소셜 URL 등 새 입력 필드를 추가할 때도 동일 패턴 적용 필요.
 
 ---
 

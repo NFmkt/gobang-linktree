@@ -112,21 +112,28 @@ Next.js(App Router) + Tailwind + Pretendard 폰트 기반 프로젝트를 세우
 
 ---
 
-## S4 — 관리자 링크 CRUD + 드래그 정렬 (AFK)
+## S4 — 관리자 링크 CRUD + 드래그 정렬 (AFK) — 완료 (2026-07-09)
 
 ### What to build
 `/admin/links`에서 링크를 추가·수정·삭제하고, 아이콘을 드롭다운으로 선택, active 토글로 노출 on/off, 드래그로 순서(order)를 변경한다. 변경은 공개 `/`에 즉시 반영된다.
 
 ### Acceptance criteria
-- [ ] 링크 추가/수정/삭제 (title, url, icon, subtitle, active, thumbnail)
-- [ ] 아이콘 드롭다운 선택 (S7 아이콘 세트 연동, 초기엔 기본 세트)
-- [ ] active 토글로 노출 제어
-- [ ] 드래그 앤 드롭 순서변경 → order 저장
-- [ ] 공개페이지 즉시 반영 확인
-- [ ] CRUD·정렬 로직 테스트
+- [x] 링크 추가/수정/삭제 (title, url, icon, subtitle, active, thumbnail)
+- [x] 아이콘 드롭다운 선택 (IconSelect, ICON_MAP 8키)
+- [x] active 토글로 노출 제어
+- [x] 드래그 앤 드롭 순서변경 → order 저장 (네이티브 HTML5 DnD, 신규 패키지 없음)
+- [x] 공개페이지 즉시 반영 확인 (getLinks()가 매 요청 실 조회 — 별도 캐시 무효화 불필요)
+- [x] CRUD·정렬 로직 테스트
 
 ### Blocked by
 - S1, S3
+
+### 구현 메모 (2026-07-09 완료)
+- 계획: `docs/superpowers/plans/2026-07-09-s4-admin-links-crud.md`. whole-slice 최종 리뷰(opus) = With fixes(Important 1건 반영 후 merge 가능).
+- 관리 API(`/api/admin/links*`)는 전부 `createServiceSupabaseClient()`(service_role, RLS 우회) 사용, 인증은 기존 `src/proxy.ts`가 처리.
+- **보안 수정(최종 리뷰 발견)**: `link.url`이 검증 없이 공개 페이지 `<a href>`로 렌더돼 `javascript:` 스킴 저장형 XSS 경로였음 → `isSafeLinkUrl()`로 http/https/mailto 화이트리스트 검증을 POST/PATCH 양쪽에 추가.
+- 신규 링크 생성 시 `id`는 서버가 `crypto.randomUUID()`로 생성, `order`는 클라이언트가 `links.length + 1`로 계산해 전달(서버 max-order 조회 없음 — 저트래픽 단일 관리자 도구라 완벽한 원자성 불필요, delete 후 순서 충돌 가능성은 드래그 재정렬로 자연 치유됨).
+- Minor 하드닝 후보(비차단): icon 필드 서버측 ICON_MAP 검증 없음(UI만 제약), 드래그 재정렬 실패 시 롤백/refetch 없음(에러 배너만 표시).
 
 ---
 
