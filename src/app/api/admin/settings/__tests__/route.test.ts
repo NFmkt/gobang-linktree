@@ -79,6 +79,20 @@ describe("PATCH /api/admin/settings", () => {
     expect(res.status).toBe(400);
   });
 
+  it("social이 배열이 아니면 400을 반환하고 update하지 않는다", async () => {
+    const from = vi.fn();
+    vi.doMock("@/lib/supabase/server", () => ({
+      createServiceSupabaseClient: vi.fn().mockReturnValue({ from }),
+    }));
+    vi.resetModules();
+
+    const { PATCH } = await import("../route");
+    const res = await PATCH(makeRequest({ social: "not-an-array" }));
+
+    expect(res.status).toBe(400);
+    expect(from).not.toHaveBeenCalled();
+  });
+
   it("social 항목에 javascript: URL이 있으면 400을 반환하고 update하지 않는다", async () => {
     const from = vi.fn();
     vi.doMock("@/lib/supabase/server", () => ({

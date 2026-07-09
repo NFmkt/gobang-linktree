@@ -51,6 +51,9 @@ export async function PATCH(request: Request) {
   }
 
   if (body.social !== undefined) {
+    if (!Array.isArray(body.social)) {
+      return NextResponse.json({ error: "social은 배열이어야 합니다" }, { status: 400 });
+    }
     for (const item of body.social) {
       if (!isSafeLinkUrl(item.url)) {
         return NextResponse.json(
