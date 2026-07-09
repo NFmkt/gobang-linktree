@@ -4,7 +4,7 @@ import { createAdminSessionToken } from "@/lib/auth/adminSession";
 
 const ORIGINAL_ENV = { ...process.env };
 
-describe("middleware", () => {
+describe("proxy (admin route protection)", () => {
   beforeEach(() => {
     process.env = { ...ORIGINAL_ENV, ADMIN_PASSWORD: "correct-password" };
   });
