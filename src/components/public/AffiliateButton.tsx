@@ -1,3 +1,7 @@
+"use client";
+
+import { sendEventBeacon } from "@/lib/events/sendBeacon";
+
 type AffiliateButtonProps = {
   email: string;
   label: string;
@@ -17,6 +21,7 @@ export function AffiliateButton({ email, label, delayMs }: AffiliateButtonProps)
   return (
     <a
       href={`mailto:${email}`}
+      onClick={() => sendEventBeacon({ type: "click", link_id: "affiliate" })}
       className={`focus-glow flex min-h-[54px] w-full items-center justify-center rounded-[var(--r)] border-[1.5px] border-[var(--color-primary)] bg-transparent px-4 py-3 text-[15.5px] font-bold text-[var(--color-primary)] transition-[background-color,box-shadow,transform] duration-150 ease-out hover:bg-[var(--color-blue-50)] active:scale-[0.99] motion-reduce:transition-none${animated ? " reveal" : ""}`}
       style={animated ? { animationDelay: `${delayMs}ms` } : undefined}
     >

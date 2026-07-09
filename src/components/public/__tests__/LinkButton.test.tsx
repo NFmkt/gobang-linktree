@@ -1,7 +1,12 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { LinkButton } from "../LinkButton";
 import type { Link } from "@/lib/links/types";
+import { sendEventBeacon } from "@/lib/events/sendBeacon";
+
+vi.mock("@/lib/events/sendBeacon", () => ({
+  sendEventBeacon: vi.fn(),
+}));
 
 const link: Link = {
   id: "youth",
@@ -46,6 +51,14 @@ describe("LinkButton", () => {
     const anchor = screen.getByRole("link", { name: new RegExp(link.title) });
     expect(anchor.className).toMatch(/(^|\s)reveal(\s|$)/);
     expect(anchor.style.animationDelay).toBe("200ms");
+  });
+
+  it("클릭 시 link.id로 클릭 이벤트 비콘을 전송한다", () => {
+    vi.mocked(sendEventBeacon).mockClear();
+    render(<LinkButton link={link} />);
+    const anchor = screen.getByRole("link", { name: new RegExp(link.title) });
+    fireEvent.click(anchor);
+    expect(sendEventBeacon).toHaveBeenCalledWith({ type: "click", link_id: link.id });
   });
 });
 

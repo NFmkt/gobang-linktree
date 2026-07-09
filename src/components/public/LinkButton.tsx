@@ -1,5 +1,8 @@
+"use client";
+
 import type { Link } from "@/lib/links/types";
 import { LinkIcon } from "@/components/icons/LinkIcon";
+import { sendEventBeacon } from "@/lib/events/sendBeacon";
 
 type LinkButtonProps = {
   link: Link;
@@ -20,6 +23,7 @@ export function LinkButton({ link, delayMs }: LinkButtonProps) {
   return (
     <a
       href={link.url}
+      onClick={() => sendEventBeacon({ type: "click", link_id: link.id })}
       className={`focus-glow group flex min-h-[68px] w-full items-center gap-3.5 rounded-[var(--r)] border-[1.5px] border-[var(--color-border-strong)] bg-[var(--color-surface)] px-4 py-3.5 text-[var(--color-ink)] shadow-[var(--sh-sm)] transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[var(--color-primary)] hover:shadow-[0_0_0_4px_var(--color-blue-ring)] active:translate-y-0 active:scale-[0.99] motion-reduce:transition-none motion-reduce:hover:translate-y-0 focus-visible:border-[var(--color-primary)]${animated ? " reveal" : ""}`}
       style={animated ? { animationDelay: `${delayMs}ms` } : undefined}
     >
