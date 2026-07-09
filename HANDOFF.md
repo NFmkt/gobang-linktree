@@ -5,7 +5,7 @@
 ---
 
 ## 0. 한 줄 요약
-비비드 블루 리디자인 + 코드리뷰 반영 + **Supabase 실연동(S1) + S2 통계 비콘 전체 완료 및 커밋됨**(test 57 pass, lint/build clean). 남은 건 S3(관리자 인증)부터 — `ADMIN_PASSWORD`는 이미 `.env.local`에 있음.
+비비드 블루 리디자인 + 코드리뷰 반영 + **S1 Supabase 실연동 + S2 통계 비콘 + S3 관리자 인증 전부 완료 및 커밋됨**(test 83 pass, lint/build clean). 다음은 **S4 관리자 링크 CRUD**부터.
 
 ---
 
@@ -77,13 +77,23 @@
 - **⚠️ S6에서 반드시 지킬 것**: 아그리게이션 쿼리는 `WHERE type = 'click'`로 필터해야 함 — pageview 행도 구조상 link_id를 받을 수 있어 필터 없이 group by하면 클릭 카운트가 오염됨.
 - Minor 하드닝 후보(비차단): `/api/events`에 레이트리밋/페이로드 길이 제한 없음, `sendBeacon()`이 false 리턴할 때 fetch 폴백 없음.
 
-### 3-C. 남은 개발 슬라이스 ([docs/TODO.md](docs/TODO.md))
-S0·S1·S2·S7 완료. 남은 것:
-- [ ] **S3** 관리자 인증 — `ADMIN_PASSWORD` 확보됨(`.env.local`에 `REDACTED`), 바로 진행 가능
-- [ ] **S4** 관리자 링크 CRUD + 드래그 — S1·S3 이후
-- [ ] **S5** 관리자 사이트 설정 — S1·S3 이후
-- [ ] **S6** 요약 통계 대시보드 — S2·S3 이후 (위 아그리게이션 필터 주의사항 반영 필수)
-- 관리자 UI는 본 비비드 블루 디자인 시스템을 상속(DESIGN_SYSTEM §9).
+### 3-C. S3 관리자 인증 — 완료 (2026-07-09)
+계획: [docs/superpowers/plans/2026-07-09-s3-admin-auth.md](docs/superpowers/plans/2026-07-09-s3-admin-auth.md).
+- `src/lib/auth/adminSession.ts` — `ADMIN_PASSWORD` 키의 결정적 HMAC(Web Crypto, Edge 호환) 세션 토큰 + `constantTimeEqual`(비번·토큰 비교 둘 다 상수시간).
+- `src/app/api/admin/{login,logout}/route.ts` — httpOnly `admin_session` 쿠키(sameSite=lax, path=/, maxAge 7일/0).
+- **`src/proxy.ts`**(주의: `middleware.ts` 아님, 아래 §4 참조) — `/admin/*`·`/api/admin/*` 보호, `/admin/login`·`/api/admin/login`만 예외.
+- `src/app/admin/(protected)/{layout,LogoutButton,page}.tsx` — 인증된 셸(라우트 그룹, `/admin/login`은 이 레이아웃 미상속).
+- `src/app/admin/login/page.tsx` — 로그인 폼.
+- whole-slice 최종 리뷰(opus) = Ready to merge, Critical/Important 0건. 리뷰 도중 fetch 에러 미처리 버그 2건(LogoutButton, 로그인 페이지) 발견·수정·재검증 완료.
+- **⚠️ 세션 모델 한계(S4+ 인지 필요)**: 개별 세션 폐기 불가(비번 변경=전원 로그아웃), 서버 측 만료 없음(토큰 자체는 비번 로테이션 전까지 영구 유효, 쿠키 maxAge는 브라우저 측 제한일 뿐). "이 기기만 로그아웃"이 필요해지면 타임스탬프+HMAC 재설계 필요.
+- Minor(비차단): 쿠키명/옵션 상수가 login/logout/proxy.ts 3곳에 중복 — S4에서 관리 라우트 늘면 공유 헬퍼로 추출 고려.
+
+### 3-D. 남은 개발 슬라이스 ([docs/TODO.md](docs/TODO.md))
+S0·S1·S2·S3·S7 완료. 남은 것:
+- [ ] **S4** 관리자 링크 CRUD + 드래그 — S1·S3 완료돼 바로 진행 가능
+- [ ] **S5** 관리자 사이트 설정 — S1·S3 완료돼 바로 진행 가능
+- [ ] **S6** 요약 통계 대시보드 — S2·S3 완료돼 바로 진행 가능 (S2의 아그리게이션 필터 주의사항 §3-B 반영 필수)
+- 관리자 UI는 본 비비드 블루 디자인 시스템을 상속(DESIGN_SYSTEM §9), `/admin` 로그인은 `.env.local`의 `ADMIN_PASSWORD=REDACTED`로 가능.
 
 **대기 중 사용자 입력**: Vercel 계정(실 배포 시점에만 필요, 로컬 개발은 이미 가능).
 
@@ -98,6 +108,8 @@ S0·S1·S2·S7 완료. 남은 것:
 - **OG 한글 렌더**: Satori 기본 폰트에 한글 없음 → `src/app/fonts/`의 Pretendard **.otf**(비-woff2)를 fs로 읽어 넘김. node_modules 직접 참조 금지(서버리스 번들 누락 위험).
 - **로고 파일**: 원본 `public/bi.png`(사용자 제공, 450×450). 이전 벡터 재현본 `public/logo.svg`는 삭제함.
 - **Tailwind 스캔 범위**: `globals.css`가 `@import "tailwindcss" source("..")`로 `src/`만 스캔하도록 제한돼 있음(2026-07-09 수정). 이 줄을 지우면 리포 루트의 `.md` 문서에 적힌 Tailwind 아무 문법 예시(예: `bg-[var(--color-...)]`)를 후보 클래스로 오인해 CSS 파싱이 깨지고 dev 서버가 500을 낼 수 있다.
+- **`middleware.ts`가 아니라 `proxy.ts`**: Next.js 16.2.10부터 "middleware" 파일 컨벤션이 deprecated고 "proxy"로 바뀜(파일명·export 함수명 둘 다: `middleware.ts`/`export function middleware` → `proxy.ts`/`export function proxy`). `next build` 시 경고 없이 `ƒ Proxy (Middleware)`가 라우트 목록에 뜨는지로 확인 가능. 이 프로젝트의 관리자 라우트 보호 로직은 `src/proxy.ts`에 있다.
+- **`.env.local`**: Supabase URL/anon/service_role + `ADMIN_PASSWORD=REDACTED`. gitignore됨, 새 세션/계정에서는 이 파일이 없으므로 `.env.example` 참고해 재구성하거나 기존 값을 전달받아야 함.
 
 ---
 

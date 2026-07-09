@@ -89,20 +89,26 @@ Next.js(App Router) + Tailwind + Pretendard 폰트 기반 프로젝트를 세우
 
 ---
 
-## S3 — 관리자 인증 (AFK)
+## S3 — 관리자 인증 (AFK) — 완료 (2026-07-09)
 
 ### What to build
 `/admin`은 단일 비밀번호(환경변수)로 잠근다. 접속 시 비번 입력 → 통과하면 세션 유지되고 빈 관리자 레이아웃(네비 포함)이 표시된다. 미인증 시 관리 라우트/관리 API 접근 차단.
 
 ### Acceptance criteria
-- [ ] `/admin` 비번 입력 게이트 (환경변수 비교)
-- [ ] 인증 성공 시 세션 유지(쿠키/세션), 재접속 시 유지
-- [ ] 미인증 시 관리 페이지·관리 API 접근 차단(리다이렉트/401)
-- [ ] 로그아웃 기능
-- [ ] 인증 통과/차단 테스트
+- [x] `/admin` 비번 입력 게이트 (환경변수 비교) — `constantTimeEqual` 상수시간 비교
+- [x] 인증 성공 시 세션 유지(쿠키/세션), 재접속 시 유지 — httpOnly 쿠키 7일
+- [x] 미인증 시 관리 페이지·관리 API 접근 차단(리다이렉트/401)
+- [x] 로그아웃 기능
+- [x] 인증 통과/차단 테스트
 
 ### Blocked by
 - S0
+
+### 구현 메모 (2026-07-09 완료)
+- 계획: `docs/superpowers/plans/2026-07-09-s3-admin-auth.md`. whole-slice 최종 리뷰(opus) = Ready to merge, Critical/Important 0건.
+- 세션 모델: `ADMIN_PASSWORD`를 키로 한 결정적 HMAC(`src/lib/auth/adminSession.ts`, Web Crypto — Edge 런타임 호환) — 별도 세션 저장소 없음. **한계(최종 리뷰 소견, S4+ 인지 필요)**: 개별 세션 폐기 불가(비번 변경만이 전원 로그아웃 방법), 서버 측 만료 없음(쿠키 maxAge만 브라우저 측 제한, 토큰 자체는 비번 로테이션 전까지 영구 유효). "이 기기만 로그아웃"이나 "N시간 후 강제 재로그인"이 필요해지면 타임스탬프+HMAC 재설계 필요.
+- **Next.js 16.2.10부터 `middleware.ts`(export `middleware`)가 deprecated → `proxy.ts`(export `proxy`)로 변경됨.** 실제 파일은 `src/proxy.ts`. 신규 프로젝트도 이 컨벤션으로 시작할 것.
+- 쿠키명 `admin_session` 상수/옵션 객체가 `login`/`logout`/`proxy.ts` 3곳에 중복(현재는 사소, S4에서 관리 라우트가 늘면 `src/lib/auth/adminCookie.ts` 공유 헬퍼로 추출 고려).
 
 ---
 
