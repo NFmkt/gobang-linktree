@@ -5,6 +5,7 @@ import { SocialRow } from "@/components/public/SocialRow";
 import { LinkButton } from "@/components/public/LinkButton";
 import { AffiliateButton } from "@/components/public/AffiliateButton";
 import { Footer } from "@/components/public/Footer";
+import { PageviewBeacon } from "@/components/public/PageviewBeacon";
 
 const LINK_STAGGER_MS = 45;
 /** 히어로(0) 이후 소셜 로우가 시작하는 지연 baseline. */
@@ -16,6 +17,7 @@ export default async function Home() {
 
   return (
     <main className="flex flex-1 flex-col items-center">
+      <PageviewBeacon />
       <ProfileHeader config={SITE_CONFIG} />
 
       <div className="flex w-full max-w-[480px] flex-1 flex-col gap-4 px-5 pb-2 pt-6">
