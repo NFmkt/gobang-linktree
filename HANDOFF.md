@@ -5,7 +5,7 @@
 ---
 
 ## 0. 한 줄 요약
-공개 링크페이지 **"비비드 블루" 리디자인 + 코드리뷰 10건 수정 + OG 로고 통일 완료**(코드/테스트 42 pass/린트/빌드 그린). **아직 git 커밋은 안 됨.** 관리자·통계 슬라이스(S2~S6)는 키 대기.
+비비드 블루 리디자인 + 코드리뷰 반영 + **Supabase 실연동(S1) + S2 통계 비콘 전체 완료 및 커밋됨**(test 57 pass, lint/build clean). 남은 건 S3(관리자 인증)부터 — `ADMIN_PASSWORD`는 이미 `.env.local`에 있음.
 
 ---
 
@@ -18,7 +18,8 @@
   - 린트: `npm run lint` (⚠️ `next lint`는 Next 16에서 제거됨 — `eslint` 직접 실행)
   - 빌드: `npx next build`
   - 프리뷰: launch.json 서버명 **`gobang-linktree`** (port 3939)
-- **로컬 우선**: 실 Supabase 키가 없어 `getLinks()`는 시드 기반. 배포/DB 연동은 키 확보 후.
+- **Supabase 연동 완료**: 프로젝트 `emjgjfkacaterqwvveuo` 생성됨, `.env.local`에 URL/anon/service_role/`ADMIN_PASSWORD=REDACTED` 세팅 완료(gitignore됨, 커밋 안 됨). `links`(0001)·`events`(0002) 마이그레이션 적용 완료. `getLinks()`는 env 있으면 실 조회, 없으면 SEED_LINKS 폴백.
+- **Supabase 마이그레이션 적용 방법**: DB 비밀번호가 없어 CLI(`supabase db push`)는 못 씀 — 대시보드 SQL Editor(`https://supabase.com/dashboard/project/emjgjfkacaterqwvveuo/sql/new`)에 파일 내용을 직접 붙여넣어 실행하는 방식으로 진행함. **RLS 정책만으론 부족 — `grant insert/select on <table> to anon;`을 반드시 같이 실행**해야 anon이 실제로 접근 가능(0001 적용 때 이걸 빼먹어서 permission denied 겪음, 0002부터는 마이그레이션 파일에 처음부터 포함).
 
 ---
 
@@ -63,18 +64,28 @@
 - [x] **신규 소셜 아이콘 3종**: 칩 배경 rect를 `IconChipBg` 공유 프리미티브로 추출, `InstagramIcon`의 `#FFFFFF` 하드코딩을 `TI.white`로 교체. 픽셀 단위 시각 미세 튜닝은 로컬 3939 포트가 사용자 기존 dev 서버로 점유돼 preview 스크린샷 도구를 못 붙여 **미실시** — 필요 시 그 서버 종료 후 재검증.
 - [x] `/code-review high` 실행 → 10건 findings 전부 수정(stroke 아이콘 위반, 본문 텍스트 대비 위반, 죽은 토큰, 아이콘/포커스링/그림자 중복, 문서 드리프트 등). `npx vitest run`=42 pass, lint clean, build clean(경고 0)으로 재검증.
 - [x] **버그 발견 및 수정(리뷰 범위 밖)**: Tailwind v4가 프로젝트 전체(md 파일 포함)를 스캔하다 이 문서의 예시 텍스트 `bg-[var(--color-...)]`를 후보 클래스로 오인해 CSS 파싱 실패 → 로컬 dev 서버가 500 에러 상태였음. `globals.css`에 `@import "tailwindcss" source("..")`로 스캔 범위를 `src/`로 제한해 해결.
-- [ ] 커밋. **아직 커밋 안 됨** — 사용자 확인 후 진행 예정.
+- [x] **커밋 완료** (`17e23ca` 리디자인+리뷰수정, `4368531` getLinks Supabase 연동).
 
-### 3-B. 미완 개발 슬라이스 (전부 사용자 입력 대기 — [docs/TODO.md](docs/TODO.md))
-S0·S1·S7 완료. 남은 것:
-- [ ] **S2** 통계 축적(비콘) — 실 Supabase 키 필요
-- [ ] **S3** 관리자 인증 — `ADMIN_PASSWORD` 필요
-- [ ] **S4** 관리자 링크 CRUD + 드래그 — S1·S3 + Supabase
-- [ ] **S5** 관리자 사이트 설정 — S1·S3 + Supabase
-- [ ] **S6** 요약 통계 대시보드 — S2·S3 + Supabase
+### 3-B. S2 통계 축적(비콘) — 완료 (2026-07-09)
+계획: [docs/superpowers/plans/2026-07-09-s2-events-tracking.md](docs/superpowers/plans/2026-07-09-s2-events-tracking.md), 진행원장: [.superpowers/sdd/progress.md](.superpowers/sdd/progress.md).
+- `supabase/migrations/0002_events.sql` — `events` 테이블, anon insert-only RLS(읽기는 S6에서 service_role).
+- `src/lib/events/{types,sendBeacon}.ts` — `sendEventBeacon()`, `navigator.sendBeacon` 우선 + fetch keepalive 폴백.
+- `src/app/api/events/route.ts` — `POST /api/events`, IP 헤더 전혀 미접근, type enum 검증, click→link_id 필수.
+- `src/components/public/PageviewBeacon.tsx` — 마운트 1회 pageview 비콘, page.tsx에 연동.
+- `LinkButton`·`AffiliateButton` — `"use client"` 전환 + onClick 비콘(link.id / `"affiliate"`), preventDefault 없음(즉시 이동 유지).
+- whole-slice 최종 리뷰(opus) = Ready to merge, Critical/Important 0건.
+- **⚠️ S6에서 반드시 지킬 것**: 아그리게이션 쿼리는 `WHERE type = 'click'`로 필터해야 함 — pageview 행도 구조상 link_id를 받을 수 있어 필터 없이 group by하면 클릭 카운트가 오염됨.
+- Minor 하드닝 후보(비차단): `/api/events`에 레이트리밋/페이로드 길이 제한 없음, `sendBeacon()`이 false 리턴할 때 fetch 폴백 없음.
+
+### 3-C. 남은 개발 슬라이스 ([docs/TODO.md](docs/TODO.md))
+S0·S1·S2·S7 완료. 남은 것:
+- [ ] **S3** 관리자 인증 — `ADMIN_PASSWORD` 확보됨(`.env.local`에 `REDACTED`), 바로 진행 가능
+- [ ] **S4** 관리자 링크 CRUD + 드래그 — S1·S3 이후
+- [ ] **S5** 관리자 사이트 설정 — S1·S3 이후
+- [ ] **S6** 요약 통계 대시보드 — S2·S3 이후 (위 아그리게이션 필터 주의사항 반영 필수)
 - 관리자 UI는 본 비비드 블루 디자인 시스템을 상속(DESIGN_SYSTEM §9).
 
-**대기 중 사용자 입력**: Supabase URL/anon/service key, `ADMIN_PASSWORD`, Vercel 계정.
+**대기 중 사용자 입력**: Vercel 계정(실 배포 시점에만 필요, 로컬 개발은 이미 가능).
 
 ---
 

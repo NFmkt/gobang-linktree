@@ -8,7 +8,7 @@
 - [x] **RD 비비드 블루 리디자인 (2026-07-08)** — 테마 전환 완료. 아래 "리디자인" 섹션 참조.
 - [x] S0 워킹 스켈레톤 (HITL) — 리뷰 통과. 실 Supabase/Vercel 연결은 키 확보 후 잔여.
 - [x] S1 공개 링크페이지 (AFK) — 리뷰 통과. 로컬 우선(시드 기반), 실 DB 연결은 키 확보 후 스왑.
-- [ ] S2 통계 축적(비콘) (AFK)
+- [x] S2 통계 축적(비콘) (AFK) — 리뷰 통과. Route Handler(`/api/events`) + sendBeacon(fetch keepalive 폴백) + PageviewBeacon + LinkButton·AffiliateButton 클릭 연동.
 - [ ] S3 관리자 인증 (AFK)
 - [ ] S4 관리자 링크 CRUD + 드래그 정렬 (AFK)
 - [ ] S5 관리자 사이트 설정 (AFK)
@@ -81,6 +81,11 @@ Next.js(App Router) + Tailwind + Pretendard 폰트 기반 프로젝트를 세우
 
 ### Blocked by
 - S1
+
+### 구현 메모 (2026-07-09 완료)
+- `events` 테이블(`supabase/migrations/0002_events.sql`): anon insert-only RLS (읽기는 S6에서 service_role). **S6 아그리게이션 시 반드시 `WHERE type = 'click'`로 필터** — pageview 행도 구조상 link_id를 받을 수 있어 필터 없이 group by하면 카운트가 오염된다(최종 리뷰 소견).
+- 브라우저가 Supabase에 직접 쓰지 않고, 자체 `POST /api/events` Route Handler를 거친다 (`navigator.sendBeacon`이 커스텀 헤더를 못 보내서 apikey 인증 불가).
+- 공개 write 엔드포인트라 레이트리밋/페이로드 길이 제한은 아직 없음(MVP 의도적 유예, 최종 리뷰 소견 — 실 트래픽 받기 전 하드닝 후보).
 
 ---
 
