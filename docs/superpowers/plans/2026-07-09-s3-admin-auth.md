@@ -356,9 +356,11 @@ git commit -m "feat(S3): 로그인/로그아웃 API 라우트"
 
 ### Task 3: Middleware (라우트 보호)
 
+> **⚠️ 실행 시 정정(2026-07-09)**: Next.js 16.2.10부터 `middleware.ts` 파일 컨벤션이 deprecated이고 `proxy.ts`로 바뀌었다(export 함수명도 `middleware` → `proxy`). 실제 구현은 아래 `src/middleware.ts`가 아니라 **`src/proxy.ts`**(export 함수명 `proxy`)로, 테스트는 `src/__tests__/proxy.test.ts`로 적용됨. 나머지 로직은 동일.
+
 **Files:**
-- Create: `src/middleware.ts`
-- Test: `src/__tests__/middleware.test.ts`
+- Create: `src/middleware.ts` (실제: `src/proxy.ts`)
+- Test: `src/__tests__/middleware.test.ts` (실제: `src/__tests__/proxy.test.ts`)
 
 **Interfaces:**
 - Consumes: `verifyAdminSessionToken()` from `@/lib/auth/adminSession` (Task 1)

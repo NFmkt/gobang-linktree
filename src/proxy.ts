@@ -4,7 +4,7 @@ import { verifyAdminSessionToken } from "@/lib/auth/adminSession";
 const SESSION_COOKIE = "admin_session";
 const PUBLIC_ADMIN_PATHS = new Set(["/admin/login", "/api/admin/login"]);
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (PUBLIC_ADMIN_PATHS.has(pathname)) {
