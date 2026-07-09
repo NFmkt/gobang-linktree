@@ -45,7 +45,7 @@ describe("LogoutButton", () => {
 });
 
 describe("AdminLayout", () => {
-  it("브랜드명·로그아웃 버튼·children을 렌더한다", async () => {
+  it("브랜드명·네비 링크·로그아웃 버튼·children을 렌더한다", async () => {
     const AdminLayout = (await import("../layout")).default;
     render(
       <AdminLayout>
@@ -53,6 +53,10 @@ describe("AdminLayout", () => {
       </AdminLayout>,
     );
     expect(screen.getByText("고방 관리자")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "링크 관리" })).toHaveAttribute(
+      "href",
+      "/admin/links",
+    );
     expect(screen.getByRole("button", { name: "로그아웃" })).toBeInTheDocument();
     expect(screen.getByText("본문 콘텐츠")).toBeInTheDocument();
   });
