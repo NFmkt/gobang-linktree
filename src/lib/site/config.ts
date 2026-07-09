@@ -68,3 +68,16 @@ export const SITE_CONFIG: SiteConfig = {
   affiliateEmail: "neoflatworks2@gmail.com",
   affiliateLabel: "제휴·협력 문의",
 };
+
+/**
+ * `site_settings` 테이블의 원본 행 모양(snake_case). getSiteConfig()가
+ * 이 모양을 조회해 SiteConfig(camelCase)로 매핑한다.
+ */
+export type SiteSettingsRow = {
+  id: string;
+  brand_name: string;
+  bio: string;
+  social: SocialItem[];
+  affiliate_email: string;
+  affiliate_label: string;
+};
