@@ -1,5 +1,5 @@
 import { getLinks } from "@/lib/links/getLinks";
-import { SITE_CONFIG } from "@/lib/site/config";
+import { getSiteConfig } from "@/lib/site/getSiteConfig";
 import { ProfileHeader } from "@/components/public/ProfileHeader";
 import { SocialRow } from "@/components/public/SocialRow";
 import { LinkButton } from "@/components/public/LinkButton";
@@ -13,16 +13,16 @@ const SOCIAL_DELAY_MS = 80;
 const LINKS_BASE_DELAY_MS = 140;
 
 export default async function Home() {
-  const links = await getLinks();
+  const [links, siteConfig] = await Promise.all([getLinks(), getSiteConfig()]);
 
   return (
     <main className="flex flex-1 flex-col items-center">
       <PageviewBeacon />
-      <ProfileHeader config={SITE_CONFIG} />
+      <ProfileHeader config={siteConfig} />
 
       <div className="flex w-full max-w-[480px] flex-1 flex-col gap-4 px-5 pb-2 pt-6">
         <div className="reveal" style={{ animationDelay: `${SOCIAL_DELAY_MS}ms` }}>
-          <SocialRow items={SITE_CONFIG.social} />
+          <SocialRow items={siteConfig.social} />
         </div>
 
         <section aria-label="링크 목록" className="flex flex-col gap-3">
@@ -36,12 +36,12 @@ export default async function Home() {
         </section>
 
         <AffiliateButton
-          email={SITE_CONFIG.affiliateEmail}
-          label={SITE_CONFIG.affiliateLabel}
+          email={siteConfig.affiliateEmail}
+          label={siteConfig.affiliateLabel}
           delayMs={LINKS_BASE_DELAY_MS + links.length * LINK_STAGGER_MS}
         />
 
-        <Footer brandName={SITE_CONFIG.brandName} />
+        <Footer brandName={siteConfig.brandName} />
       </div>
     </main>
   );

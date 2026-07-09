@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import { ImageResponse } from "next/og";
-import { SITE_CONFIG } from "@/lib/site/config";
+import { getSiteConfig } from "@/lib/site/getSiteConfig";
 
 /**
  * 카카오톡/SNS 공유 미리보기 OG 이미지 (1200x630).
@@ -35,7 +35,9 @@ const logoDataUri = `data:image/png;base64,${readFileSync(
   join(process.cwd(), "public/bi.png"),
 ).toString("base64")}`;
 
-export default function OpengraphImage() {
+export default async function OpengraphImage() {
+  const siteConfig = await getSiteConfig();
+
   return new ImageResponse(
     (
       <div
@@ -132,7 +134,7 @@ export default function OpengraphImage() {
               letterSpacing: -3,
             }}
           >
-            {SITE_CONFIG.brandName}
+            {siteConfig.brandName}
           </div>
         </div>
 
@@ -150,7 +152,7 @@ export default function OpengraphImage() {
             color: "rgba(255,255,255,0.94)",
           }}
         >
-          {SITE_CONFIG.bio}
+          {siteConfig.bio}
         </div>
       </div>
     ),

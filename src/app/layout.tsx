@@ -1,27 +1,31 @@
 import type { Metadata } from "next";
-import { SITE_CONFIG } from "@/lib/site/config";
+import { getSiteConfig } from "@/lib/site/getSiteConfig";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3939",
-  ),
-  title: SITE_CONFIG.brandName,
-  description: SITE_CONFIG.bio,
-  openGraph: {
-    title: SITE_CONFIG.brandName,
-    description: SITE_CONFIG.bio,
-    type: "website",
-    locale: "ko_KR",
-    images: [{ url: "/opengraph-image" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: SITE_CONFIG.brandName,
-    description: SITE_CONFIG.bio,
-    images: [{ url: "/opengraph-image" }],
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const siteConfig = await getSiteConfig();
+
+  return {
+    metadataBase: new URL(
+      process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3939",
+    ),
+    title: siteConfig.brandName,
+    description: siteConfig.bio,
+    openGraph: {
+      title: siteConfig.brandName,
+      description: siteConfig.bio,
+      type: "website",
+      locale: "ko_KR",
+      images: [{ url: "/opengraph-image" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: siteConfig.brandName,
+      description: siteConfig.bio,
+      images: [{ url: "/opengraph-image" }],
+    },
+  };
+}
 
 export default function RootLayout({
   children,
