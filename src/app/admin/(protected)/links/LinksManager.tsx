@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type DragEvent } from "react";
 import type { Link } from "@/lib/links/types";
 import { LinkIcon } from "@/components/icons/LinkIcon";
+import { reorderLinks } from "@/lib/admin/reorderLinks";
 import { LinkForm } from "./LinkForm";
 
 type LinksManagerProps = {
@@ -14,6 +15,7 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
   const [editingLink, setEditingLink] = useState<Link | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
 
   async function refetch() {
     try {
@@ -67,6 +69,33 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
     void refetch();
   }
 
+  function handleDragStart(id: string) {
+    setDraggedId(id);
+  }
+
+  function handleDragOver(event: DragEvent<HTMLLIElement>) {
+    event.preventDefault();
+  }
+
+  async function handleDrop(targetId: string) {
+    if (!draggedId) return;
+    const reordered = reorderLinks(links, draggedId, targetId);
+    setDraggedId(null);
+    setLinks(reordered);
+    try {
+      const res = await fetch("/api/admin/links/reorder", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order: reordered.map((link) => link.id) }),
+      });
+      if (!res.ok) {
+        setError("순서 변경에 실패했습니다.");
+      }
+    } catch {
+      setError("순서 변경 요청에 실패했습니다. 네트워크 상태를 확인해주세요.");
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -104,6 +133,10 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
         {links.map((link) => (
           <li
             key={link.id}
+            draggable
+            onDragStart={() => handleDragStart(link.id)}
+            onDragOver={handleDragOver}
+            onDrop={() => void handleDrop(link.id)}
             className="flex items-center gap-3 rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-[var(--sh-sm)]"
           >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--r-sm)] bg-[var(--color-blue-50)]">

@@ -127,4 +127,26 @@ describe("LinksManager", () => {
       ).toBeInTheDocument();
     });
   });
+
+  it("링크를 드래그해서 놓으면 새 순서로 reorder API를 호출한다", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 200 })); // reorder PATCH
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<LinksManager initialLinks={links} />);
+    const items = screen.getAllByRole("listitem");
+
+    fireEvent.dragStart(items[1]); // "B 링크"를 집어서
+    fireEvent.dragOver(items[0]);
+    fireEvent.drop(items[0]); // "A 링크" 위치에 놓음
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/admin/links/reorder", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order: ["b", "a"] }),
+      });
+    });
+  });
 });
