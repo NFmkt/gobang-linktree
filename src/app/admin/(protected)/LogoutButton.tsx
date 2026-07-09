@@ -6,7 +6,12 @@ export function LogoutButton() {
   const router = useRouter();
 
   async function handleLogout() {
-    await fetch("/api/admin/logout", { method: "POST" });
+    try {
+      await fetch("/api/admin/logout", { method: "POST" });
+    } catch {
+      // 네트워크 오류라도 로그인 화면으로는 이동시킨다
+      // (쿠키가 실제로 안 지워졌다면 미들웨어가 다음 요청에서 다시 막는다).
+    }
     router.push("/admin/login");
     router.refresh();
   }

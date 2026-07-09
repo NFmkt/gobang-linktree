@@ -30,6 +30,18 @@ describe("LogoutButton", () => {
     expect(fetch).toHaveBeenCalledWith("/api/admin/logout", { method: "POST" });
     expect(refreshMock).toHaveBeenCalled();
   });
+
+  it("로그아웃 요청이 네트워크 오류로 실패해도 로그인 페이지로 이동한다", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    const { LogoutButton } = await import("../LogoutButton");
+    render(<LogoutButton />);
+    fireEvent.click(screen.getByRole("button", { name: "로그아웃" }));
+
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith("/admin/login");
+    });
+    expect(refreshMock).toHaveBeenCalled();
+  });
 });
 
 describe("AdminLayout", () => {
