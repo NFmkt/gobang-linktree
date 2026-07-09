@@ -1,5 +1,6 @@
 import type { Link } from "./types";
 import { SEED_LINKS } from "./seed";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 /**
  * 공개 노출 대상 링크만 골라 order 오름차순으로 정렬한다.
@@ -14,19 +15,25 @@ export function selectVisibleLinks(links: Link[]): Link[] {
 /**
  * 링크 데이터 소스에서 전체 링크를 가져온다.
  *
- * 로컬 우선(local-first) 단계: `SEED_LINKS`를 그대로 반환한다.
- * 추후 Supabase 키가 준비되면 이 함수 내부만 교체하면 된다. 예:
- *
- *   if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
- *     const supabase = await createServerSupabaseClient();
- *     const { data } = await supabase.from("links").select("*");
- *     return data ?? [];
- *   }
- *
- * 위 코드는 지금 작성하지 않는다 (실 키 없음, 과도설계 금지) — 교체 지점만 명시.
+ * NEXT_PUBLIC_SUPABASE_URL이 설정돼 있으면 Supabase `links` 테이블에서 조회한다.
+ * 없으면(로컬 키 미설정) `SEED_LINKS`로 폴백 — 키 없이도 로컬 개발이 가능하다.
  */
 async function fetchAllLinks(): Promise<Link[]> {
-  return SEED_LINKS;
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    return SEED_LINKS;
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("links")
+    .select("*")
+    .order("order", { ascending: true });
+
+  if (error) {
+    throw new Error(`links 조회 실패: ${error.message}`);
+  }
+
+  return data ?? [];
 }
 
 /**

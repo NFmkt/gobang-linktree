@@ -1,8 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { selectVisibleLinks, getLinks } from "../getLinks";
 import { SEED_LINKS } from "../seed";
 import type { Link } from "../types";
 import { SITE_CONFIG } from "@/lib/site/config";
+
+const ORIGINAL_ENV = { ...process.env };
 
 describe("selectVisibleLinks", () => {
   it("active=false 링크를 제외한다", () => {
@@ -75,13 +77,61 @@ describe("SEED_LINKS", () => {
 });
 
 describe("getLinks", () => {
-  it("활성 링크만, order 오름차순 정렬로 반환한다", async () => {
+  it("활성 링크만, order 오름차순 정렬로 반환한다 (NEXT_PUBLIC_SUPABASE_URL 미설정 시 SEED_LINKS 폴백)", async () => {
     const result = await getLinks();
 
     expect(result.every((l) => l.active)).toBe(true);
     const orders = result.map((l) => l.order);
     expect(orders).toEqual([...orders].sort((a, b) => a - b));
     expect(result.map((l) => l.id)).toEqual(["youth", "feed", "series"]);
+  });
+});
+
+describe("getLinks — Supabase 연동", () => {
+  beforeEach(() => {
+    process.env = { ...ORIGINAL_ENV, NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co" };
+  });
+
+  afterEach(() => {
+    process.env = { ...ORIGINAL_ENV };
+    vi.doUnmock("@/lib/supabase/server");
+    vi.resetModules();
+  });
+
+  it("NEXT_PUBLIC_SUPABASE_URL이 설정되면 SEED_LINKS 대신 Supabase에서 조회한 값을 반환한다", async () => {
+    const dbRows: Link[] = [
+      { id: "db-only", title: "DB 전용 링크", url: "https://db.test", icon: "db", order: 1, active: true },
+    ];
+    const order = vi.fn().mockResolvedValue({ data: dbRows, error: null });
+    const select = vi.fn().mockReturnValue({ order });
+    const from = vi.fn().mockReturnValue({ select });
+
+    vi.doMock("@/lib/supabase/server", () => ({
+      createServerSupabaseClient: vi.fn().mockResolvedValue({ from }),
+    }));
+    vi.resetModules();
+
+    const { getLinks: getLinksWithSupabase } = await import("../getLinks");
+    const result = await getLinksWithSupabase();
+
+    expect(result).toEqual(dbRows);
+    expect(from).toHaveBeenCalledWith("links");
+    expect(select).toHaveBeenCalledWith("*");
+    expect(order).toHaveBeenCalledWith("order", { ascending: true });
+  });
+
+  it("Supabase 조회가 에러를 반환하면 예외를 던진다", async () => {
+    const order = vi.fn().mockResolvedValue({ data: null, error: { message: "network down" } });
+    const select = vi.fn().mockReturnValue({ order });
+    const from = vi.fn().mockReturnValue({ select });
+
+    vi.doMock("@/lib/supabase/server", () => ({
+      createServerSupabaseClient: vi.fn().mockResolvedValue({ from }),
+    }));
+    vi.resetModules();
+
+    const { getLinks: getLinksWithSupabase } = await import("../getLinks");
+    await expect(getLinksWithSupabase()).rejects.toThrow(/network down/);
   });
 });
 
