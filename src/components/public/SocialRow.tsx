@@ -6,14 +6,15 @@ type SocialRowProps = {
 };
 
 /**
- * 소셜 링크 3종 — 정사각 아이콘 버튼 가로 배치.
+ * 소셜 링크 5종(홈/블로그/인스타그램/유튜브/카카오) — 블루틴트 칩 가로 배치.
  *
- * 각 버튼은 비비드 블록 소형(2px 테두리, 하드 오프셋) + 최소 44x44 터치 타깃.
- * 새 탭으로 이동하며 스크린리더를 위해 aria-label을 필수로 부여한다.
+ * 각 칩은 blue-50 배경 + 브랜드 고정색 fill 아이콘, 최소 44x44(실제 48x48) 터치 타깃.
+ * hover 시 칩 배경이 blue-100으로 진해진다(아이콘 색 반전 없음 — 아이콘은 브랜드색 고정).
+ * 새 탭 이동, 스크린리더용 aria-label 필수. focus-visible 시 블루 글로우 링.
  */
 export function SocialRow({ items }: SocialRowProps) {
   return (
-    <nav aria-label="소셜 링크" className="flex justify-center gap-3 py-2">
+    <nav aria-label="소셜 링크" className="flex justify-center gap-3">
       {items.map((item) => (
         <a
           key={item.key}
@@ -21,12 +22,9 @@ export function SocialRow({ items }: SocialRowProps) {
           target="_blank"
           rel="noopener noreferrer"
           aria-label={item.label}
-          className="group flex h-11 w-11 items-center justify-center rounded-[var(--radius-block)] border-[length:var(--block-border-width)] border-[var(--color-ink)] bg-[var(--color-surface)] text-[var(--color-ink)] shadow-[var(--shadow-block)] transition-[transform,box-shadow] duration-150 ease-out hover:translate-x-px hover:translate-y-px hover:shadow-[var(--shadow-block-hover)] active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-ink)]"
+          className="focus-glow group flex h-12 w-12 items-center justify-center rounded-[14px] bg-[var(--color-blue-50)] transition-[background-color,transform,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:bg-[var(--color-blue-100)] active:translate-y-0 active:scale-[0.96] motion-reduce:transition-none motion-reduce:hover:translate-y-0"
         >
-          <LinkIcon
-            iconKey={item.key}
-            className="h-5 w-5 text-[var(--color-primary-deep)] transition-colors group-hover:text-[var(--color-primary)]"
-          />
+          <LinkIcon iconKey={item.key} className="h-[22px] w-[22px]" />
         </a>
       ))}
     </nav>

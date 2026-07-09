@@ -5,6 +5,7 @@
 > 개발 순서: S0 → S1 → (S2·S3 병렬) → (S4·S5 병렬) → S6 → S7
 
 ## 진행 현황
+- [x] **RD 비비드 블루 리디자인 (2026-07-08)** — 테마 전환 완료. 아래 "리디자인" 섹션 참조.
 - [x] S0 워킹 스켈레톤 (HITL) — 리뷰 통과. 실 Supabase/Vercel 연결은 키 확보 후 잔여.
 - [x] S1 공개 링크페이지 (AFK) — 리뷰 통과. 로컬 우선(시드 기반), 실 DB 연결은 키 확보 후 스왑.
 - [ ] S2 통계 축적(비콘) (AFK)
@@ -13,6 +14,20 @@
 - [ ] S5 관리자 사이트 설정 (AFK)
 - [ ] S6 요약 통계 대시보드 (AFK)
 - [x] S7 브랜드 마감 (AFK) — 리뷰 통과. 파비콘·OG(한글 렌더 OK)·아이콘세트 확정·접근성 점검.
+
+---
+
+## RD — 비비드 블루 리디자인 (2026-07-08, 완료)
+
+> 레퍼런스 `gobangmkt.github.io/kakao-openchat-ad` 상속. 기존 "비비드 블록"(틸/라임/크림/하드오프셋) 폐기 → 소프트 SaaS "비비드 블루". 스펙: [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md).
+
+- [x] R1 디자인 토큰 전환 — `globals.css` 비비드 블루(radius·소프트 그림자·블루 글로우·reveal)
+- [x] R2 히어로 — `ProfileHeader` 풀블리드 블루(떠있는 도형·글래스 로고칩·900 헤딩·글래스 필) + `page.tsx` 레이아웃/스태거
+- [x] R3 아이콘 세트 — icon-design(TOSSFACE) fill 전용 다색, ICON_MAP 6키 + default 재제작
+- [x] R4 링크카드+소셜 — 흰 소프트 카드(아이콘칩·셰브론·hover 글로우), 소셜 블루틴트 칩
+- [x] R5 제휴 CTA — 아웃라인(블루 보더+블루 텍스트) + Footer muted
+- [x] R6 S7 브랜드 자산 — `icon.svg`·`apple-icon`·`opengraph-image` 블루 하우스 마크/풀블리드 블루 OG
+- [x] R7 검증 — vitest 41 pass, lint clean, build 성공, 라이브 렌더(데스크톱/375px) 확인, 접근성 대비 검산
 
 ---
 

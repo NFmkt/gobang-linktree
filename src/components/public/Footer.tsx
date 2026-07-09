@@ -7,7 +7,7 @@ export function Footer({ brandName }: FooterProps) {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="flex flex-col items-center gap-1 pb-10 pt-6 text-center text-[12px] text-[var(--color-ink-soft)]">
+    <footer className="mt-auto flex flex-col items-center gap-1 pb-10 pt-8 text-center text-[12px] text-[var(--color-muted)]">
       <p>
         © {year} {brandName}
       </p>

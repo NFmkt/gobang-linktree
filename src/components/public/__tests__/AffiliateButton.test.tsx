@@ -25,7 +25,7 @@ describe("AffiliateButton", () => {
     expect(screen.getByText(SITE_CONFIG.affiliateLabel)).toBeInTheDocument();
   });
 
-  it("focus-visible 포커스 링 스타일을 갖는다 (라임 배경과 겹치지 않도록 offset 포함)", () => {
+  it("focus-visible 시 블루 글로우 링 스타일(focus-glow)을 갖는다", () => {
     render(
       <AffiliateButton
         email={SITE_CONFIG.affiliateEmail}
@@ -33,8 +33,18 @@ describe("AffiliateButton", () => {
       />,
     );
     const link = screen.getByRole("link", { name: SITE_CONFIG.affiliateLabel });
-    expect(link.className).toMatch(/focus-visible:outline/);
-    expect(link.className).toMatch(/focus-visible:outline-\[var\(--color-ink\)\]/);
-    expect(link.className).toMatch(/focus-visible:outline-offset-/);
+    expect(link.className).toMatch(/(^|\s)focus-glow(\s|$)/);
+  });
+
+  it("아웃라인 스타일 — 블루 테두리 + 블루 텍스트", () => {
+    render(
+      <AffiliateButton
+        email={SITE_CONFIG.affiliateEmail}
+        label={SITE_CONFIG.affiliateLabel}
+      />,
+    );
+    const link = screen.getByRole("link", { name: SITE_CONFIG.affiliateLabel });
+    expect(link.className).toMatch(/border-\[var\(--color-primary\)\]/);
+    expect(link.className).toMatch(/text-\[var\(--color-primary\)\]/);
   });
 });

@@ -5,7 +5,9 @@ import { FeedIcon } from "./FeedIcon";
 import { SeriesIcon } from "./SeriesIcon";
 import { HomeIcon } from "./HomeIcon";
 import { BlogIcon } from "./BlogIcon";
+import { InstagramIcon } from "./InstagramIcon";
 import { YoutubeIcon } from "./YoutubeIcon";
+import { KakaoIcon } from "./KakaoIcon";
 import { DefaultLinkIcon } from "./DefaultLinkIcon";
 
 /**
@@ -20,7 +22,9 @@ export const ICON_MAP: Record<string, ComponentType<IconProps>> = {
   series: SeriesIcon,
   home: HomeIcon,
   blog: BlogIcon,
+  instagram: InstagramIcon,
   youtube: YoutubeIcon,
+  kakao: KakaoIcon,
 };
 
 export { DefaultLinkIcon };

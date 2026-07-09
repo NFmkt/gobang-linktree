@@ -6,15 +6,18 @@ import { SITE_CONFIG } from "@/lib/site/config";
 /**
  * 카카오톡/SNS 공유 미리보기 OG 이미지 (1200x630).
  *
- * @frontend-design 적용: 비비드 블록 테마 — 크림 배경, GYI 틸 마크,
- * 2px 다크 테두리 + 하드 오프셋(블러 없는 6px 6px 0) 카드,
- * 라임은 한 곳(코너 태그)에만 절제해서 사용한다.
+ * @frontend-design 적용: 비비드 블루 테마 — 풀블리드 블루 배경 위에 떠있는
+ * 반투명 라운드 도형(공개 히어로와 동일 아이덴티티), 흰 박스 안 bi.png 로고
+ * (히어로 ProfileHeader와 동일 아이덴티티), "고방" 대형 헤딩 + 반투명 카드 bio.
+ * 하드 오프셋 없는 소프트 감성.
  *
  * 한글 렌더링 주의: next/og(Satori)의 기본 폰트에는 한글 글리프가 없어
  * "고방"이 두부(□)로 나온다. Satori는 woff2를 파싱하지 못하므로,
  * `pretendard` 패키지의 비-woff2(.otf) 폰트 파일을 리포 안(src/app/fonts/)에
- * 복사해두고 fs.readFileSync로 읽어 fonts에 전달한다. node_modules 경로를
- * 직접 참조하면 Vercel 서버리스 번들에 포함되지 않을 수 있어 피한다.
+ * 복사해두고 fs.readFileSync로 읽어 fonts에 전달한다.
+ *
+ * 로고 렌더링 주의: Satori의 <img>는 상대 경로를 못 읽으므로 public/bi.png를
+ * fs로 읽어 base64 data URI로 인라인한다(폰트와 동일한 fs 로드 패턴).
  */
 export const runtime = "nodejs";
 export const size = { width: 1200, height: 630 };
@@ -28,6 +31,9 @@ const pretendardSemiBold = readFileSync(
 const pretendardRegular = readFileSync(
   join(fontDir, "Pretendard-Regular.otf"),
 );
+const logoDataUri = `data:image/png;base64,${readFileSync(
+  join(process.cwd(), "public/bi.png"),
+).toString("base64")}`;
 
 export default function OpengraphImage() {
   return new ImageResponse(
@@ -39,66 +45,94 @@ export default function OpengraphImage() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          padding: "72px",
-          background: "#FBFAF3",
+          padding: "80px",
+          background: "#1B4DFF",
           fontFamily: "Pretendard",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        {/* 라임 코너 태그 — 유일한 라임 사용처 */}
+        {/* 떠있는 반투명 라운드 도형 (히어로와 동일 장식) */}
         <div
           style={{
             position: "absolute",
-            top: 48,
-            right: 48,
+            top: -120,
+            right: -100,
+            width: 460,
+            height: 300,
+            background: "rgba(255,255,255,0.08)",
+            borderRadius: "120px 120px 120px 40px",
+            transform: "rotate(10deg)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            bottom: -140,
+            left: -80,
+            width: 340,
+            height: 240,
+            background: "rgba(255,255,255,0.07)",
+            borderRadius: "40px 120px 120px 120px",
+            transform: "rotate(-8deg)",
+          }}
+        />
+
+        {/* 코너 태그 */}
+        <div
+          style={{
+            position: "absolute",
+            top: 56,
+            right: 56,
             display: "flex",
             alignItems: "center",
-            padding: "8px 18px",
-            background: "#B9F227",
-            border: "2px solid #14201E",
+            padding: "10px 22px",
+            background: "rgba(255,255,255,0.16)",
+            border: "1px solid rgba(255,255,255,0.35)",
             borderRadius: 999,
-            fontSize: 22,
+            fontSize: 24,
             fontWeight: 600,
-            color: "#14201E",
+            color: "#FFFFFF",
           }}
         >
           gobang.kr
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
-          {/* GYI 틸 로고 마크 — ProfileHeader와 동일 아이덴티티 */}
+        <div style={{ display: "flex", alignItems: "center", gap: 30 }}>
+          {/* 흰 박스 + bi.png 로고 — ProfileHeader 히어로와 동일 아이덴티티 */}
           <div
             style={{
               display: "flex",
-              width: 116,
-              height: 116,
+              width: 120,
+              height: 120,
               flexShrink: 0,
               alignItems: "center",
               justifyContent: "center",
-              background: "#14B8A6",
-              border: "3px solid #14201E",
-              borderRadius: 28,
-              boxShadow: "6px 6px 0 #14201E",
-              fontSize: 40,
-              fontWeight: 700,
-              color: "#FFFFFF",
-              letterSpacing: -1,
+              background: "#FFFFFF",
+              borderRadius: 30,
+              padding: 18,
             }}
           >
-            {SITE_CONFIG.logoLabel}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={logoDataUri}
+              alt=""
+              width={84}
+              height={84}
+              style={{ objectFit: "contain" }}
+            />
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div
-              style={{
-                fontSize: 108,
-                fontWeight: 700,
-                lineHeight: 1,
-                color: "#14201E",
-                letterSpacing: -2,
-              }}
-            >
-              {SITE_CONFIG.brandName}
-            </div>
+          <div
+            style={{
+              fontSize: 116,
+              fontWeight: 700,
+              lineHeight: 1,
+              color: "#FFFFFF",
+              letterSpacing: -3,
+            }}
+          >
+            {SITE_CONFIG.brandName}
           </div>
         </div>
 
@@ -106,15 +140,14 @@ export default function OpengraphImage() {
           style={{
             display: "flex",
             alignSelf: "flex-start",
-            marginTop: 44,
-            padding: "22px 32px",
-            background: "#FFFFFF",
-            border: "2px solid #14201E",
-            borderRadius: 18,
-            boxShadow: "6px 6px 0 #14201E",
-            fontSize: 38,
+            marginTop: 46,
+            padding: "24px 34px",
+            background: "rgba(255,255,255,0.14)",
+            border: "1px solid rgba(255,255,255,0.3)",
+            borderRadius: 22,
+            fontSize: 40,
             fontWeight: 500,
-            color: "#3E4B48",
+            color: "rgba(255,255,255,0.94)",
           }}
         >
           {SITE_CONFIG.bio}

@@ -1,18 +1,24 @@
 type AffiliateButtonProps = {
   email: string;
   label: string;
+  /** 진입 stagger용 지연(ms). 미지정 시 애니메이션 없음. */
+  delayMs?: number;
 };
 
 /**
- * 제휴·협력 문의 CTA — 라임 accent를 사용하는 유일한 지점.
+ * 제휴·협력 문의 CTA — 아웃라인 스타일.
  *
- * 라임 배경 위에는 접근성 규칙에 따라 반드시 다크 텍스트(--color-ink)를 쓴다.
+ * 흰 링크 카드들 사이에서 배경 없이 블루 테두리 + 블루 텍스트로 조용하게
+ * 구분되는 유일한 강조 지점. hover 시 연한 블루(blue-50)로 채워지고,
+ * focus-visible 시 블루 글로우 링을 노출한다.
  */
-export function AffiliateButton({ email, label }: AffiliateButtonProps) {
+export function AffiliateButton({ email, label, delayMs }: AffiliateButtonProps) {
+  const animated = delayMs !== undefined;
   return (
     <a
       href={`mailto:${email}`}
-      className="flex min-h-[52px] w-full items-center justify-center rounded-[var(--radius-block)] border-[length:var(--block-border-width)] border-[var(--color-ink)] bg-[var(--color-accent)] px-4 py-3 text-[16px] font-semibold text-[var(--color-ink)] shadow-[var(--shadow-block)] transition-[transform,box-shadow] duration-150 ease-out hover:translate-x-px hover:translate-y-px hover:shadow-[var(--shadow-block-hover)] active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-ink)]"
+      className={`focus-glow flex min-h-[54px] w-full items-center justify-center rounded-[var(--r)] border-[1.5px] border-[var(--color-primary)] bg-transparent px-4 py-3 text-[15.5px] font-bold text-[var(--color-primary)] transition-[background-color,box-shadow,transform] duration-150 ease-out hover:bg-[var(--color-blue-50)] active:scale-[0.99] motion-reduce:transition-none${animated ? " reveal" : ""}`}
+      style={animated ? { animationDelay: `${delayMs}ms` } : undefined}
     >
       {label}
     </a>

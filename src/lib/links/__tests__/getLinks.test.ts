@@ -86,9 +86,9 @@ describe("getLinks", () => {
 });
 
 describe("SITE_CONFIG", () => {
-  it("affiliateEmail과 social 3개 url이 SPEC 값과 일치한다", () => {
+  it("affiliateEmail과 social 5개 url이 SPEC 값과 일치한다", () => {
     expect(SITE_CONFIG.affiliateEmail).toBe("neoflatworks2@gmail.com");
-    expect(SITE_CONFIG.social).toHaveLength(3);
+    expect(SITE_CONFIG.social).toHaveLength(5);
 
     const byKey = Object.fromEntries(SITE_CONFIG.social.map((s) => [s.key, s]));
 
@@ -96,6 +96,8 @@ describe("SITE_CONFIG", () => {
       "https://gobang.kr/home?p=homeAdvertisingPopup",
     );
     expect(byKey.blog.url).toBe("https://blog.naver.com/neoflat1116");
+    expect(byKey.instagram.url).toBe("https://www.instagram.com/gobang.kr");
     expect(byKey.youtube.url).toBe("https://www.youtube.com/@youth_info");
+    expect(byKey.kakao.url).toBe("https://open.kakao.com/o/gspAuZ5");
   });
 });

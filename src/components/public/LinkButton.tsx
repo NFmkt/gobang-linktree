@@ -8,32 +8,42 @@ type LinkButtonProps = {
 };
 
 /**
- * 링크 목록의 개별 항목 — full-width 비비드 블록 버튼.
+ * 링크 목록의 개별 항목 — 흰 소프트 카드.
  *
- * 좌측 아이콘 + title(라벨, 500) + optional subtitle(본문, 400).
- * 흰 표면 위 2px 다크 테두리 + 하드 오프셋 그림자. hover 시 오프셋이
- * 줄어들며 버튼이 "눌리는" 느낌을 주고, active 시 살짝 축소된다.
+ * 좌측 블루틴트 아이콘 칩 + title(800) + optional subtitle + 우측 셰브론.
+ * 1.5px 소프트 보더 + 부드러운 그림자. hover 시 보더가 블루로 바뀌며
+ * 글로우 링이 번지고 셰브론이 오른쪽으로 이동한다. active 시 살짝 축소.
+ * focus-visible 시 동일한 블루 글로우 링을 노출한다.
  */
 export function LinkButton({ link, delayMs }: LinkButtonProps) {
+  const animated = delayMs !== undefined;
   return (
     <a
       href={link.url}
-      className="group link-button-enter flex min-h-[56px] w-full items-center gap-3 rounded-[var(--radius-block)] border-[length:var(--block-border-width)] border-[var(--color-ink)] bg-[var(--color-surface)] px-4 py-3 text-[var(--color-ink)] shadow-[var(--shadow-block)] transition-[transform,box-shadow] duration-150 ease-out hover:translate-x-px hover:translate-y-px hover:shadow-[var(--shadow-block-hover)] active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-ink)]"
-      style={delayMs !== undefined ? { animationDelay: `${delayMs}ms` } : undefined}
+      className={`focus-glow group flex min-h-[68px] w-full items-center gap-3.5 rounded-[var(--r)] border-[1.5px] border-[var(--color-border-strong)] bg-[var(--color-surface)] px-4 py-3.5 text-[var(--color-ink)] shadow-[var(--sh-sm)] transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[var(--color-primary)] hover:shadow-[0_0_0_4px_var(--color-blue-ring)] active:translate-y-0 active:scale-[0.99] motion-reduce:transition-none motion-reduce:hover:translate-y-0 focus-visible:border-[var(--color-primary)]${animated ? " reveal" : ""}`}
+      style={animated ? { animationDelay: `${delayMs}ms` } : undefined}
     >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-bg)] text-[var(--color-primary-deep)]">
-        <LinkIcon iconKey={link.icon} className="h-5 w-5" />
+      <span className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[12px] bg-[var(--color-blue-50)]">
+        <LinkIcon iconKey={link.icon} className="h-[22px] w-[22px]" />
       </span>
-      <span className="flex min-w-0 flex-col items-start">
-        <span className="truncate text-[16px] font-medium leading-tight">
+      <span className="flex min-w-0 flex-1 flex-col items-start">
+        <span className="truncate text-[16px] font-extrabold leading-tight tracking-[-0.01em]">
           {link.title}
         </span>
         {link.subtitle ? (
-          <span className="truncate text-[13px] leading-tight text-[var(--color-ink-soft)]">
+          <span className="mt-0.5 truncate text-[13.5px] leading-tight text-[var(--color-ink-2)]">
             {link.subtitle}
           </span>
         ) : null}
       </span>
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 20 20"
+        className="h-5 w-5 shrink-0 text-[var(--color-muted)] transition-[transform,color] duration-200 ease-out group-hover:translate-x-1 group-hover:text-[var(--color-primary)] motion-reduce:transition-none"
+        fill="currentColor"
+      >
+        <path d="M7.4 4.4a1.15 1.15 0 0 1 1.63 0l4.57 4.57a1.15 1.15 0 0 1 0 1.63L9.03 15.2a1.15 1.15 0 1 1-1.63-1.63L11.34 10 7.4 6.03a1.15 1.15 0 0 1 0-1.63Z" />
+      </svg>
     </a>
   );
 }

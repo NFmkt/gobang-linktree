@@ -50,9 +50,19 @@ export const SITE_CONFIG: SiteConfig = {
       url: "https://blog.naver.com/neoflat1116",
     },
     {
+      key: "instagram",
+      label: "인스타그램",
+      url: "https://www.instagram.com/gobang.kr",
+    },
+    {
       key: "youtube",
       label: "유튜브",
       url: "https://www.youtube.com/@youth_info",
+    },
+    {
+      key: "kakao",
+      label: "카카오톡 오픈채팅",
+      url: "https://open.kakao.com/o/gspAuZ5",
     },
   ],
   affiliateEmail: "neoflatworks2@gmail.com",

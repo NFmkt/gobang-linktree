@@ -21,8 +21,8 @@ describe("getLinkIcon", () => {
     expect(container.querySelector("svg")).toBeInTheDocument();
   });
 
-  it("소셜 키(home/blog/youtube)에 대해 아이콘 컴포넌트를 반환한다", () => {
-    for (const key of ["home", "blog", "youtube"]) {
+  it("소셜 키(home/blog/instagram/youtube/kakao)에 대해 아이콘 컴포넌트를 반환한다", () => {
+    for (const key of ["home", "blog", "instagram", "youtube", "kakao"]) {
       const Icon = getLinkIcon(key);
       const { container } = render(<Icon />);
       expect(container.querySelector("svg")).toBeInTheDocument();

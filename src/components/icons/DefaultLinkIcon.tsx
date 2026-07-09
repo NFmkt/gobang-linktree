@@ -1,12 +1,15 @@
-import { IconBase, type IconProps } from "./IconBase";
+import { IconBase, IconChipBg, TI, type IconProps } from "./IconBase";
 
-/** 미매칭 아이콘 키에 대한 폴백 — 체인/링크 모티프 */
+/** 미매칭 아이콘 키 폴백 — 외부 링크 (fill-only, TOSSFACE) */
 export function DefaultLinkIcon(props: IconProps) {
   return (
     <IconBase {...props}>
-      <path d="M9.5 14.5 14.5 9.5" />
-      <path d="M10.5 6.5 12 5a3.5 3.5 0 0 1 5 5l-1.5 1.5" />
-      <path d="M13.5 17.5 12 19a3.5 3.5 0 0 1-5-5l1.5-1.5" />
+      <IconChipBg fill={TI.blueSky} />
+      {/* 외부 링크 화살표 */}
+      <path
+        d="M8.2 6.6h5.2v5.2h-1.9V9.8l-3.3 3.3-1.35-1.35 3.3-3.3H8.2Z"
+        fill={TI.white}
+      />
     </IconBase>
   );
 }

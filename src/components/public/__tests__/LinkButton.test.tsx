@@ -35,11 +35,17 @@ describe("LinkButton", () => {
     expect(screen.queryByText("보조 설명")).not.toBeInTheDocument();
   });
 
-  it("focus-visible 포커스 링 스타일을 갖는다", () => {
+  it("focus-visible 시 블루 글로우 링 스타일(focus-glow)을 갖는다", () => {
     render(<LinkButton link={link} />);
     const anchor = screen.getByRole("link", { name: new RegExp(link.title) });
-    expect(anchor.className).toMatch(/focus-visible:outline/);
-    expect(anchor.className).toMatch(/focus-visible:outline-\[var\(--color-ink\)\]/);
+    expect(anchor.className).toMatch(/(^|\s)focus-glow(\s|$)/);
+  });
+
+  it("delayMs가 주어지면 reveal 애니메이션 클래스와 지연을 적용한다", () => {
+    render(<LinkButton link={link} delayMs={200} />);
+    const anchor = screen.getByRole("link", { name: new RegExp(link.title) });
+    expect(anchor.className).toMatch(/(^|\s)reveal(\s|$)/);
+    expect(anchor.style.animationDelay).toBe("200ms");
   });
 });
 
