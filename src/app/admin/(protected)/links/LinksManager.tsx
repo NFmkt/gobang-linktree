@@ -13,28 +13,52 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
   const [links, setLinks] = useState<Link[]>(initialLinks);
   const [editingLink, setEditingLink] = useState<Link | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function refetch() {
-    const res = await fetch("/api/admin/links");
-    if (res.ok) {
+    try {
+      const res = await fetch("/api/admin/links");
+      if (!res.ok) {
+        setError("목록을 다시 불러오지 못했습니다.");
+        return;
+      }
       const body = await res.json();
       setLinks(body.links);
+      setError(null);
+    } catch {
+      setError("목록을 다시 불러오지 못했습니다. 네트워크 상태를 확인해주세요.");
     }
   }
 
   async function handleToggleActive(link: Link) {
-    await fetch(`/api/admin/links/${link.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ active: !link.active }),
-    });
-    await refetch();
+    try {
+      const res = await fetch(`/api/admin/links/${link.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: !link.active }),
+      });
+      if (!res.ok) {
+        setError("노출 상태 변경에 실패했습니다.");
+        return;
+      }
+      await refetch();
+    } catch {
+      setError("노출 상태 변경 요청에 실패했습니다. 네트워크 상태를 확인해주세요.");
+    }
   }
 
   async function handleDelete(link: Link) {
     if (!window.confirm(`"${link.title}" 링크를 삭제할까요?`)) return;
-    await fetch(`/api/admin/links/${link.id}`, { method: "DELETE" });
-    await refetch();
+    try {
+      const res = await fetch(`/api/admin/links/${link.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        setError("삭제에 실패했습니다.");
+        return;
+      }
+      await refetch();
+    } catch {
+      setError("삭제 요청에 실패했습니다. 네트워크 상태를 확인해주세요.");
+    }
   }
 
   function handleFormSaved() {
@@ -55,6 +79,8 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
           + 링크 추가
         </button>
       </div>
+
+      {error ? <p className="text-[13px] text-[var(--color-danger)]">{error}</p> : null}
 
       {isCreating ? (
         <LinkForm
