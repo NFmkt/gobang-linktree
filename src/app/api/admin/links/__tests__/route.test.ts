@@ -70,6 +70,22 @@ describe("POST /api/admin/links", () => {
     expect(res.status).toBe(400);
   });
 
+  it("url이 javascript: 스킴이면 400을 반환하고 insert하지 않는다", async () => {
+    const from = vi.fn();
+    vi.doMock("@/lib/supabase/server", () => ({
+      createServiceSupabaseClient: vi.fn().mockReturnValue({ from }),
+    }));
+    vi.resetModules();
+
+    const { POST } = await import("../route");
+    const res = await POST(
+      makeRequest({ title: "A", url: "javascript:alert(1)", icon: "home", order: 1 }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(from).not.toHaveBeenCalled();
+  });
+
   it("정상 생성 시 201과 함께 active 기본값 true로 insert한다", async () => {
     const createdRow = {
       id: "generated-id",

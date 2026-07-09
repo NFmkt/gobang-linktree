@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
+import { isSafeLinkUrl } from "@/lib/links/isSafeLinkUrl";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -20,6 +21,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "invalid JSON body" }, { status: 400 });
+  }
+
+  if (body.url !== undefined && !isSafeLinkUrl(body.url)) {
+    return NextResponse.json({ error: "허용되지 않는 URL 형식입니다" }, { status: 400 });
   }
 
   const updates: Record<string, unknown> = {};

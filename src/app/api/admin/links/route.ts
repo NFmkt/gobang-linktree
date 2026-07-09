@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
+import { isSafeLinkUrl } from "@/lib/links/isSafeLinkUrl";
 
 type CreateLinkBody = {
   title?: string;
@@ -38,6 +39,10 @@ export async function POST(request: Request) {
       { error: "title, url, icon, order는 필수입니다" },
       { status: 400 },
     );
+  }
+
+  if (!isSafeLinkUrl(body.url)) {
+    return NextResponse.json({ error: "허용되지 않는 URL 형식입니다" }, { status: 400 });
   }
 
   const supabase = createServiceSupabaseClient();

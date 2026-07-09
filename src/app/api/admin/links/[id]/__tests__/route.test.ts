@@ -29,6 +29,20 @@ describe("PATCH /api/admin/links/[id]", () => {
     expect(res.status).toBe(400);
   });
 
+  it("url이 javascript: 스킴이면 400을 반환하고 update하지 않는다", async () => {
+    const from = vi.fn();
+    vi.doMock("@/lib/supabase/server", () => ({
+      createServiceSupabaseClient: vi.fn().mockReturnValue({ from }),
+    }));
+    vi.resetModules();
+
+    const { PATCH } = await import("../route");
+    const res = await PATCH(makeRequest({ url: "javascript:alert(1)" }), makeParams("a"));
+
+    expect(res.status).toBe(400);
+    expect(from).not.toHaveBeenCalled();
+  });
+
   it("정상 업데이트 시 200과 갱신된 링크를 반환한다", async () => {
     const updatedRow = { id: "a", title: "A", url: "https://a.test", icon: "home", order: 1, active: false };
     const maybeSingle = vi.fn().mockResolvedValue({ data: updatedRow, error: null });
