@@ -28,6 +28,8 @@ export default function AdminLoginPage() {
 
       router.push("/admin");
       router.refresh();
+    } catch {
+      setError("로그인 요청에 실패했습니다. 네트워크 상태를 확인해주세요.");
     } finally {
       setSubmitting(false);
     }

@@ -51,6 +51,23 @@ describe("AdminLoginPage", () => {
     expect(pushMock).not.toHaveBeenCalled();
   });
 
+  it("네트워크 오류로 fetch가 실패하면 에러 메시지를 보여주고 이동하지 않는다", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    const AdminLoginPage = (await import("../page")).default;
+    render(<AdminLoginPage />);
+
+    fireEvent.change(screen.getByPlaceholderText("비밀번호"), { target: { value: "REDACTED" } });
+    fireEvent.click(screen.getByRole("button", { name: "로그인" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("로그인 요청에 실패했습니다. 네트워크 상태를 확인해주세요."),
+      ).toBeInTheDocument();
+    });
+    expect(pushMock).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "로그인" })).not.toBeDisabled();
+  });
+
   it("비밀번호가 비어 있으면 로그인 버튼이 비활성화된다", async () => {
     const AdminLoginPage = (await import("../page")).default;
     render(<AdminLoginPage />);
