@@ -15,6 +15,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             >
               링크 관리
             </Link>
+            <Link
+              href="/admin/settings"
+              className="focus-glow rounded-[var(--r-sm)] px-2 py-1 text-[13.5px] font-semibold text-[var(--color-ink-2)] hover:text-[var(--color-primary)]"
+            >
+              사이트 설정
+            </Link>
           </nav>
         </div>
         <LogoutButton />
