@@ -43,7 +43,7 @@ export async function PATCH(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "invalid JSON body" }, { status: 400 });
+    return NextResponse.json({ error: "잘못된 JSON 형식입니다" }, { status: 400 });
   }
 
   if (body.affiliate_email !== undefined && !isValidEmail(body.affiliate_email)) {
