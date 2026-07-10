@@ -13,9 +13,9 @@ const summaryWithData: StatsSummary = {
   totalPageviews: 42,
   totalClicks: 17,
   clickThroughRate: 40.5,
-  pageviewsWeekOverWeek: { current: 42, previous: 30, changePercent: 40 },
+  pageviewsPeriodOverPeriod: { current: 42, previous: 30, changePercent: 40 },
   clicksByLink: [{ linkId: "home", title: "홈", count: 10 }],
-  dailyTrend7: [
+  dailyTrend: [
     { date: "2026-07-04", count: 1 },
     { date: "2026-07-05", count: 2 },
     { date: "2026-07-06", count: 3 },
@@ -24,7 +24,6 @@ const summaryWithData: StatsSummary = {
     { date: "2026-07-09", count: 6 },
     { date: "2026-07-10", count: 7 },
   ],
-  dailyTrend30: Array.from({ length: 30 }, (_, i) => ({ date: `2026-06-${i + 1}`, count: i })),
   topReferrers: [{ source: "instagram.com", count: 20 }],
   topCampaigns: [{ campaign: "summer-sale", count: 5 }],
   weekdayDistribution: [
@@ -36,19 +35,20 @@ const summaryWithData: StatsSummary = {
     { weekday: "토", count: 8 },
     { weekday: "일", count: 1 },
   ],
+  capped: false,
 };
 
 const emptySummary: StatsSummary = {
   totalPageviews: 0,
   totalClicks: 0,
   clickThroughRate: null,
-  pageviewsWeekOverWeek: { current: 0, previous: 0, changePercent: null },
+  pageviewsPeriodOverPeriod: { current: 0, previous: 0, changePercent: null },
   clicksByLink: [],
-  dailyTrend7: [],
-  dailyTrend30: [],
+  dailyTrend: [],
   topReferrers: [],
   topCampaigns: [],
   weekdayDistribution: [],
+  capped: false,
 };
 
 describe("StatsDashboard", () => {
@@ -86,16 +86,16 @@ describe("StatsDashboard", () => {
     expect(screen.getAllByText("-").length).toBeGreaterThan(0);
   });
 
-  it("전주 대비 증감 배지를 화살표+텍스트로 보여준다 (색상만으로 표현하지 않음)", async () => {
+  it("기간 대비 증감 배지를 화살표+텍스트로 보여준다 (색상만으로 표현하지 않음)", async () => {
     const { StatsDashboard } = await import("../StatsDashboard");
     render(<StatsDashboard summary={summaryWithData} />);
     expect(screen.getByText(/▲.*40%/)).toBeInTheDocument();
   });
 
-  it("전주 데이터가 없으면(changePercent null) 증감 배지를 표시하지 않는다", async () => {
+  it("직전 기간 데이터가 없으면(changePercent null) 증감 배지를 표시하지 않는다", async () => {
     const noComparison: StatsSummary = {
       ...summaryWithData,
-      pageviewsWeekOverWeek: { current: 5, previous: 0, changePercent: null },
+      pageviewsPeriodOverPeriod: { current: 5, previous: 0, changePercent: null },
     };
     const { StatsDashboard } = await import("../StatsDashboard");
     render(<StatsDashboard summary={noComparison} />);
@@ -130,15 +130,11 @@ describe("StatsDashboard", () => {
     expect(screen.getByText(/아직 쌓인 통계가 없습니다/)).toBeInTheDocument();
   });
 
-  it("7일/30일 토글 버튼으로 추이 데이터를 전환한다", async () => {
+  it("방문 추이 섹션이 summary.dailyTrend 데이터 그대로를 렌더한다", async () => {
     const { StatsDashboard } = await import("../StatsDashboard");
     render(<StatsDashboard summary={summaryWithData} />);
-    const svgBefore = document.querySelectorAll("circle");
-    expect(svgBefore).toHaveLength(7);
-
-    fireEvent.click(screen.getByRole("button", { name: "30일" }));
-    const svgAfter = document.querySelectorAll("circle");
-    expect(svgAfter).toHaveLength(30);
+    expect(screen.getByText("방문 추이")).toBeInTheDocument();
+    expect(document.querySelectorAll("circle")).toHaveLength(summaryWithData.dailyTrend.length);
   });
 
   it("초기화 버튼 클릭 시 확인 후 DELETE를 호출하고 router.refresh()를 호출한다", async () => {

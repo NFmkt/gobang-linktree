@@ -11,10 +11,13 @@ type StatsDashboardProps = {
 };
 
 /**
- * 전주 대비 증감 배지. 색상만으로 증감을 전달하지 않고 화살표+텍스트를 함께 표시한다.
+ * 선택 기간 대비 증감 배지. 색상만으로 증감을 전달하지 않고 화살표+텍스트를 함께 표시한다.
  * previous가 0이라 비교 불가(changePercent === null)면 아무것도 표시하지 않는다.
+ *
+ * NOTE(B1): 데이터 레이어가 고정 "전주 대비"에서 임의 기간 대비(pageviewsPeriodOverPeriod)로
+ * 바뀌었다. 이 컴포넌트는 필드명만 맞춰 컴파일되게 한 것이고, 라벨/기간 선택 UI 배선은 B3에서 한다.
  */
-function WeekOverWeekBadge({ changePercent }: { changePercent: number | null }) {
+function PeriodOverPeriodBadge({ changePercent }: { changePercent: number | null }) {
   if (changePercent === null) return null;
   const isUp = changePercent >= 0;
   return (
@@ -30,12 +33,11 @@ function WeekOverWeekBadge({ changePercent }: { changePercent: number | null }) 
 
 export function StatsDashboard({ summary }: StatsDashboardProps) {
   const router = useRouter();
-  const [trendRange, setTrendRange] = useState<7 | 30>(7);
   const [error, setError] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
 
   const isEmpty = summary.totalPageviews === 0 && summary.totalClicks === 0;
-  const trendPoints = trendRange === 7 ? summary.dailyTrend7 : summary.dailyTrend30;
+  const trendPoints = summary.dailyTrend;
 
   async function handleReset() {
     if (!window.confirm("모든 통계 데이터를 삭제할까요? 이 작업은 되돌릴 수 없습니다.")) return;
@@ -85,7 +87,7 @@ export function StatsDashboard({ summary }: StatsDashboardProps) {
                 <p className="text-[24px] font-extrabold tabular-nums text-[var(--color-ink)]">
                   {summary.totalPageviews}
                 </p>
-                <WeekOverWeekBadge changePercent={summary.pageviewsWeekOverWeek.changePercent} />
+                <PeriodOverPeriodBadge changePercent={summary.pageviewsPeriodOverPeriod.changePercent} />
               </div>
             </div>
             <div className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
@@ -111,33 +113,10 @@ export function StatsDashboard({ summary }: StatsDashboardProps) {
           </section>
 
           <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-[14px] font-bold text-[var(--color-ink)]">방문 추이</h2>
-              <div className="flex gap-1">
-                <button
-                  type="button"
-                  onClick={() => setTrendRange(7)}
-                  className={`focus-glow min-h-11 rounded-[var(--r-sm)] px-2.5 py-1 text-[12.5px] font-semibold ${
-                    trendRange === 7
-                      ? "bg-[var(--color-primary)] text-[var(--color-on-primary)]"
-                      : "text-[var(--color-ink-2)]"
-                  }`}
-                >
-                  7일
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTrendRange(30)}
-                  className={`focus-glow min-h-11 rounded-[var(--r-sm)] px-2.5 py-1 text-[12.5px] font-semibold ${
-                    trendRange === 30
-                      ? "bg-[var(--color-primary)] text-[var(--color-on-primary)]"
-                      : "text-[var(--color-ink-2)]"
-                  }`}
-                >
-                  30일
-                </button>
-              </div>
-            </div>
+            {/* NOTE(B1): 기간 프리셋/커스텀 피커 UI는 B3에서 배선한다. 지금은 선택된 from~to 범위의
+                dailyTrend 하나만 그대로 보여준다(과거의 고정 7일/30일 토글은 데이터 레이어에서
+                제거됐다). */}
+            <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">방문 추이</h2>
             <LineChart points={trendPoints} emptyMessage="아직 방문 기록이 없습니다." />
           </section>
 

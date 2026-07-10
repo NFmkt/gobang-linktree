@@ -5,7 +5,7 @@ import type {
   ExactTotals,
   LinkClickCount,
   LinkTitleRow,
-  PageviewsWeekOverWeek,
+  PageviewsPeriodOverPeriod,
   ReferrerCount,
   StatsSummary,
   WeekdayCount,
@@ -15,13 +15,22 @@ const DEFAULT_TOP_REFERRERS_LIMIT = 5;
 const DEFAULT_TOP_CAMPAIGNS_LIMIT = 5;
 const DELETED_LINK_TITLE = "삭제된 링크";
 const DELETED_LINK_ID = "__deleted__";
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 /** getUTCDay() 인덱스(0=일~6=토) 순서를 월~일로 재배열. */
 const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
 function byLocaleKo(a: string, b: string): number {
   return a.localeCompare(b, "ko");
+}
+
+/** events를 [from, to] 범위(양 끝 포함)로 필터링한다. */
+function filterByRange(events: EventRow[], from: Date, to: Date): EventRow[] {
+  const fromMs = from.getTime();
+  const toMs = to.getTime();
+  return events.filter((event) => {
+    const t = new Date(event.created_at).getTime();
+    return t >= fromMs && t <= toMs;
+  });
 }
 
 export function countByType(events: EventRow[], type: "pageview" | "click"): number {
@@ -66,11 +75,12 @@ function toDateKey(isoString: string): string {
   return isoString.slice(0, 10);
 }
 
-export function aggregateDailyTrend(
-  events: EventRow[],
-  days: number,
-  now: Date = new Date(),
-): DailyTrendPoint[] {
+/**
+ * 임의의 `from~to` 날짜 범위(양 끝 포함)에 대해 하루 단위 pageview 추이를 생성한다.
+ * from/to가 자정이 아니어도 UTC 날짜 단위로 경계를 정규화한다(예: 어느 하루 안의 특정 시각이어도
+ * 그 날짜 전체가 범위에 포함된 것으로 취급).
+ */
+export function aggregateDailyTrend(events: EventRow[], from: Date, to: Date): DailyTrendPoint[] {
   const countByDate = new Map<string, number>();
   for (const event of events) {
     if (event.type !== "pageview") continue;
@@ -79,11 +89,12 @@ export function aggregateDailyTrend(
   }
 
   const points: DailyTrendPoint[] = [];
-  for (let i = days - 1; i >= 0; i -= 1) {
-    const day = new Date(now);
-    day.setUTCDate(day.getUTCDate() - i);
-    const key = toDateKey(day.toISOString());
+  const cursor = new Date(`${toDateKey(from.toISOString())}T00:00:00.000Z`);
+  const end = new Date(`${toDateKey(to.toISOString())}T00:00:00.000Z`);
+  while (cursor.getTime() <= end.getTime()) {
+    const key = toDateKey(cursor.toISOString());
     points.push({ date: key, count: countByDate.get(key) ?? 0 });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
   return points;
 }
@@ -145,22 +156,32 @@ export function aggregateWeekdayDistribution(events: EventRow[]): WeekdayCount[]
   }));
 }
 
-export function aggregatePageviewsWeekOverWeek(
+/**
+ * "선택 기간(from~to)" vs "그 직전의 동일 길이 기간" pageview 수·증감률을 비교한다.
+ * 기간 길이를 `length = to - from`이라 할 때, 직전 기간은 `[from - length, from)`이다
+ * (선택 기간은 양 끝 포함, 직전 기간은 시작 포함·끝 미포함 — 경계 이벤트 중복 집계 방지).
+ *
+ * `events`는 선택 기간만이 아니라 직전 기간의 이벤트도 포함해서 넘겨야 의미 있는 `previous`
+ * 값이 나온다 — 호출부(getStatsSummary)는 이 범위 전체를 커버하도록 조회한다.
+ */
+export function aggregatePeriodOverPeriod(
   events: EventRow[],
-  now: Date = new Date(),
-): PageviewsWeekOverWeek {
-  const nowMs = now.getTime();
-  const currentStart = nowMs - WEEK_MS;
-  const previousStart = nowMs - 2 * WEEK_MS;
+  from: Date,
+  to: Date,
+): PageviewsPeriodOverPeriod {
+  const fromMs = from.getTime();
+  const toMs = to.getTime();
+  const length = toMs - fromMs;
+  const previousStart = fromMs - length;
 
   let current = 0;
   let previous = 0;
   for (const event of events) {
     if (event.type !== "pageview") continue;
     const t = new Date(event.created_at).getTime();
-    if (t >= currentStart && t <= nowMs) {
+    if (t >= fromMs && t <= toMs) {
       current += 1;
-    } else if (t >= previousStart && t < currentStart) {
+    } else if (t >= previousStart && t < fromMs) {
       previous += 1;
     }
   }
@@ -169,25 +190,39 @@ export function aggregatePageviewsWeekOverWeek(
   return { current, previous, changePercent };
 }
 
+/**
+ * events 배열과 [from, to] 범위를 받아 StatsSummary를 계산한다.
+ *
+ * `events`는 반드시 [from, to]만 담고 있을 필요는 없다 — `aggregatePeriodOverPeriod`는
+ * 직전 동일 길이 기간의 데이터도 필요하므로, 호출부가 더 넓은 범위(예: [from-length, to])의
+ * 이벤트를 넘길 수 있다. 그 외 집계(클릭 순위/유입출처/캠페인/요일분포/일별추이)는 이 함수
+ * 내부에서 [from, to]로 다시 필터링한 뒤 계산하므로 넓은 범위가 섞여 들어와도 안전하다.
+ *
+ * `capped`는 이벤트 조회가 limit(10000)에 도달했는지를 호출부가 판단해 그대로 전달하는 값이다
+ * (이 함수 자체는 순수 함수라 쿼리 결과의 캡 여부를 알 수 없다).
+ */
 export function buildStatsSummary(
   events: EventRow[],
   links: LinkTitleRow[],
-  now: Date = new Date(),
+  from: Date,
+  to: Date,
   exactTotals?: ExactTotals,
+  capped: boolean = false,
 ): StatsSummary {
-  const totalPageviews = exactTotals?.pageviews ?? countByType(events, "pageview");
-  const totalClicks = exactTotals?.clicks ?? countByType(events, "click");
+  const rangeEvents = filterByRange(events, from, to);
+  const totalPageviews = exactTotals?.pageviews ?? countByType(rangeEvents, "pageview");
+  const totalClicks = exactTotals?.clicks ?? countByType(rangeEvents, "click");
 
   return {
     totalPageviews,
     totalClicks,
     clickThroughRate: totalPageviews === 0 ? null : Math.round((totalClicks / totalPageviews) * 1000) / 10,
-    pageviewsWeekOverWeek: aggregatePageviewsWeekOverWeek(events, now),
-    clicksByLink: aggregateClicksByLink(events, links),
-    dailyTrend7: aggregateDailyTrend(events, 7, now),
-    dailyTrend30: aggregateDailyTrend(events, 30, now),
-    topReferrers: aggregateTopReferrers(events),
-    topCampaigns: aggregateTopCampaigns(events),
-    weekdayDistribution: aggregateWeekdayDistribution(events),
+    pageviewsPeriodOverPeriod: aggregatePeriodOverPeriod(events, from, to),
+    clicksByLink: aggregateClicksByLink(rangeEvents, links),
+    dailyTrend: aggregateDailyTrend(rangeEvents, from, to),
+    topReferrers: aggregateTopReferrers(rangeEvents),
+    topCampaigns: aggregateTopCampaigns(rangeEvents),
+    weekdayDistribution: aggregateWeekdayDistribution(rangeEvents),
+    capped,
   };
 }

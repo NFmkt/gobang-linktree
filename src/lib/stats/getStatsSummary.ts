@@ -3,27 +3,53 @@ import { buildStatsSummary } from "./aggregate";
 import type { EventRow, LinkTitleRow, StatsSummary } from "./types";
 
 /**
- * 전체 기간 이벤트를 조회해 통계 요약을 계산한다.
+ * 선택된 `from~to` 날짜 범위의 이벤트를 조회해 통계 요약을 계산한다.
  *
  * 개인 링크트리 규모 트래픽을 가정해 상세 이벤트(트렌드/유입출처/캠페인/요일분포 계산용)는
  * limit(10000)까지만 조회한다 — 이 이상 쌓이면 페이지네이션/집계 뷰가 필요하다(향후 과제).
  * 내림차순 정렬 후 자르므로, 10000건을 넘을 경우 잘려나가는 쪽은
- * 항상 가장 오래된 이벤트다 — 최근 7/30일 추이가 최신 데이터를
- * 유지한 채로 계산된다(오름차순+자르기였다면 반대로 최신 데이터가
- * 유실됐을 것, task-2 리뷰에서 발견).
+ * 항상 가장 오래된 이벤트다 — 최신 데이터를 유지한 채로 계산된다
+ * (오름차순+자르기였다면 반대로 최신 데이터가 유실됐을 것, task-2 리뷰에서 발견).
+ * 조회 건수가 정확히 10000이면(캡에 도달했으면) `capped: true`를 반환해 UI가
+ * "일부 데이터가 생략됐을 수 있음"을 알릴 수 있게 한다.
  *
- * 단, "총 방문수/총 클릭수" KPI는 이 캡과 무관하게 정확해야 하므로
- * count(exact, head)로 별도 조회해 buildStatsSummary에 넘긴다
- * (10000건 넘게 쌓여도 총계 라벨이 실제와 어긋나지 않도록, S6 whole-slice 리뷰 Minor 후속).
+ * 이벤트 조회 범위는 `from`이 아니라 `from - (to - from)`(직전 동일 길이 기간의 시작)부터다 —
+ * `pageviewsPeriodOverPeriod`(선택 기간 vs 직전 동일 길이 기간 비교)가 직전 기간의 이벤트도
+ * 필요로 하기 때문이다. buildStatsSummary는 이 넓은 범위의 이벤트를 받아 내부적으로
+ * [from, to]로 다시 필터링해 클릭순위/유입출처/캠페인/요일분포/일별추이를 계산하므로 안전하다.
+ *
+ * 반면 "총 방문수/총 클릭수" KPI는 이 캡과 무관하게, 그리고 직전 기간을 섞지 않고
+ * 정확히 `from~to` 범위만으로 정확해야 하므로 count(exact, head)로 별도 조회해
+ * buildStatsSummary에 넘긴다(10000건 넘게 쌓여도 총계 라벨이 실제와 어긋나지 않도록,
+ * S6 whole-slice 리뷰 Minor 후속).
  */
-export async function getStatsSummary(): Promise<StatsSummary> {
+export async function getStatsSummary(from: Date, to: Date): Promise<StatsSummary> {
   const supabase = createServiceSupabaseClient();
 
+  const periodLengthMs = to.getTime() - from.getTime();
+  const queryFrom = new Date(from.getTime() - periodLengthMs);
+
   const [eventsResult, linksResult, pageviewCountResult, clickCountResult] = await Promise.all([
-    supabase.from("events").select("*").order("created_at", { ascending: false }).limit(10000),
+    supabase
+      .from("events")
+      .select("*")
+      .gte("created_at", queryFrom.toISOString())
+      .lte("created_at", to.toISOString())
+      .order("created_at", { ascending: false })
+      .limit(10000),
     supabase.from("links").select("id, title"),
-    supabase.from("events").select("*", { count: "exact", head: true }).eq("type", "pageview"),
-    supabase.from("events").select("*", { count: "exact", head: true }).eq("type", "click"),
+    supabase
+      .from("events")
+      .select("*", { count: "exact", head: true })
+      .eq("type", "pageview")
+      .gte("created_at", from.toISOString())
+      .lte("created_at", to.toISOString()),
+    supabase
+      .from("events")
+      .select("*", { count: "exact", head: true })
+      .eq("type", "click")
+      .gte("created_at", from.toISOString())
+      .lte("created_at", to.toISOString()),
   ]);
 
   if (eventsResult.error) {
@@ -41,9 +67,17 @@ export async function getStatsSummary(): Promise<StatsSummary> {
 
   const events = (eventsResult.data ?? []) as EventRow[];
   const links = (linksResult.data ?? []) as LinkTitleRow[];
+  const capped = events.length === 10000;
 
-  return buildStatsSummary(events, links, new Date(), {
-    pageviews: pageviewCountResult.count ?? 0,
-    clicks: clickCountResult.count ?? 0,
-  });
+  return buildStatsSummary(
+    events,
+    links,
+    from,
+    to,
+    {
+      pageviews: pageviewCountResult.count ?? 0,
+      clicks: clickCountResult.count ?? 0,
+    },
+    capped,
+  );
 }
