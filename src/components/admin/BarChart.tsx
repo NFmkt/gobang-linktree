@@ -17,8 +17,8 @@ export function BarChart({ items, emptyMessage }: BarChartProps) {
 
   return (
     <ul className="flex flex-col gap-2">
-      {items.map((item) => (
-        <li key={item.label} className="flex items-center gap-3">
+      {items.map((item, index) => (
+        <li key={`${item.label}-${index}`} className="flex items-center gap-3">
           <span className="w-24 shrink-0 truncate text-[12.5px] font-semibold text-[var(--color-ink-2)]">
             {item.label}
           </span>
