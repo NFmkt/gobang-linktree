@@ -13,44 +13,58 @@ import type { EventRow, LinkTitleRow, StatsSummary } from "./types";
  * 조회 건수가 정확히 10000이면(캡에 도달했으면) `capped: true`를 반환해 UI가
  * "일부 데이터가 생략됐을 수 있음"을 알릴 수 있게 한다.
  *
- * 이벤트 조회 범위는 `from`이 아니라 `from - (to - from)`(직전 동일 길이 기간의 시작)부터다 —
- * `pageviewsPeriodOverPeriod`(선택 기간 vs 직전 동일 길이 기간 비교)가 직전 기간의 이벤트도
- * 필요로 하기 때문이다. buildStatsSummary는 이 넓은 범위의 이벤트를 받아 내부적으로
- * [from, to]로 다시 필터링해 클릭순위/유입출처/캠페인/요일분포/일별추이를 계산하므로 안전하다.
+ * 이 메인 이벤트 쿼리는 정확히 `[from, to]` 범위로만 조회한다(과거에는 `pageviewsPeriodOverPeriod`
+ * 계산을 위해 직전 동일 길이 기간까지 포함한 "2배 범위"로 넓혀 조회했으나, 그 경우 내림차순
+ * limit(10000) 절단이 선택 범위보다 먼저 직전 기간을 갉아먹어 두 가지 버그를 낳았다 — B1 리뷰 1라운드:
+ * ①선택 범위 자체는 10000건 근처도 아닌데 직전 기간까지 합쳐서 10000을 채우면 `capped: true`가
+ * 잘못 뜨는 false positive, ②그 상태로 `previous` 카운트도 이 잘린 배열에서 스캔하므로 직전 기간이
+ * 과소 집계되어 `changePercent`가 부정확해지는 silent undercount).
+ * 이제 `capped = events.length === 10000`은 오직 사용자가 실제로 선택한 `[from,to]` 범위의
+ * 절단 여부만 반영한다 — 클릭순위/유입출처/캠페인/요일분포/일별추이 네 집계도 애초에 `[from,to]`
+ * 범위만 필요로 했으므로 문제 없다.
  *
- * 반면 "총 방문수/총 클릭수" KPI는 이 캡과 무관하게, 그리고 직전 기간을 섞지 않고
- * 정확히 `from~to` 범위만으로 정확해야 하므로 count(exact, head)로 별도 조회해
- * buildStatsSummary에 넘긴다(10000건 넘게 쌓여도 총계 라벨이 실제와 어긋나지 않도록,
- * S6 whole-slice 리뷰 Minor 후속).
+ * "총 방문수/총 클릭수" KPI와 "직전 동일 길이 기간의 방문수"는 이 캡과 무관하게 정확해야 하므로
+ * 셋 다 count(exact, head)로 별도 조회한다:
+ * - 총 방문수/총 클릭수: `[from, to]` (기존과 동일, S6 whole-slice 리뷰 Minor 후속)
+ * - 직전 기간 방문수: `[from - (to-from), from)` — 시작 포함·끝 미포함(aggregatePeriodOverPeriod의
+ *   순수 함수 로직과 동일한 경계 규약, 경계 이벤트 중복 집계 방지). `buildStatsSummary`에
+ *   `exactTotals.previousPageviews`로 넘겨 `pageviewsPeriodOverPeriod.previous`가 이벤트 배열
+ *   스캔이 아닌 이 정확한 값을 쓰도록 한다.
  */
 export async function getStatsSummary(from: Date, to: Date): Promise<StatsSummary> {
   const supabase = createServiceSupabaseClient();
 
-  const periodLengthMs = to.getTime() - from.getTime();
-  const queryFrom = new Date(from.getTime() - periodLengthMs);
+  const previousStart = new Date(from.getTime() - (to.getTime() - from.getTime()));
 
-  const [eventsResult, linksResult, pageviewCountResult, clickCountResult] = await Promise.all([
-    supabase
-      .from("events")
-      .select("*")
-      .gte("created_at", queryFrom.toISOString())
-      .lte("created_at", to.toISOString())
-      .order("created_at", { ascending: false })
-      .limit(10000),
-    supabase.from("links").select("id, title"),
-    supabase
-      .from("events")
-      .select("*", { count: "exact", head: true })
-      .eq("type", "pageview")
-      .gte("created_at", from.toISOString())
-      .lte("created_at", to.toISOString()),
-    supabase
-      .from("events")
-      .select("*", { count: "exact", head: true })
-      .eq("type", "click")
-      .gte("created_at", from.toISOString())
-      .lte("created_at", to.toISOString()),
-  ]);
+  const [eventsResult, linksResult, pageviewCountResult, clickCountResult, previousPageviewCountResult] =
+    await Promise.all([
+      supabase
+        .from("events")
+        .select("*")
+        .gte("created_at", from.toISOString())
+        .lte("created_at", to.toISOString())
+        .order("created_at", { ascending: false })
+        .limit(10000),
+      supabase.from("links").select("id, title"),
+      supabase
+        .from("events")
+        .select("*", { count: "exact", head: true })
+        .eq("type", "pageview")
+        .gte("created_at", from.toISOString())
+        .lte("created_at", to.toISOString()),
+      supabase
+        .from("events")
+        .select("*", { count: "exact", head: true })
+        .eq("type", "click")
+        .gte("created_at", from.toISOString())
+        .lte("created_at", to.toISOString()),
+      supabase
+        .from("events")
+        .select("*", { count: "exact", head: true })
+        .eq("type", "pageview")
+        .gte("created_at", previousStart.toISOString())
+        .lt("created_at", from.toISOString()),
+    ]);
 
   if (eventsResult.error) {
     throw new Error(`events 조회 실패: ${eventsResult.error.message}`);
@@ -63,6 +77,9 @@ export async function getStatsSummary(from: Date, to: Date): Promise<StatsSummar
   }
   if (clickCountResult.error) {
     throw new Error(`총 클릭수 조회 실패: ${clickCountResult.error.message}`);
+  }
+  if (previousPageviewCountResult.error) {
+    throw new Error(`직전 기간 조회 실패: ${previousPageviewCountResult.error.message}`);
   }
 
   const events = (eventsResult.data ?? []) as EventRow[];
@@ -77,6 +94,7 @@ export async function getStatsSummary(from: Date, to: Date): Promise<StatsSummar
     {
       pageviews: pageviewCountResult.count ?? 0,
       clicks: clickCountResult.count ?? 0,
+      previousPageviews: previousPageviewCountResult.count ?? 0,
     },
     capped,
   );

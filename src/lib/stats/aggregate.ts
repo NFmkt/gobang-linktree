@@ -161,30 +161,36 @@ export function aggregateWeekdayDistribution(events: EventRow[]): WeekdayCount[]
  * 기간 길이를 `length = to - from`이라 할 때, 직전 기간은 `[from - length, from)`이다
  * (선택 기간은 양 끝 포함, 직전 기간은 시작 포함·끝 미포함 — 경계 이벤트 중복 집계 방지).
  *
- * `events`는 선택 기간만이 아니라 직전 기간의 이벤트도 포함해서 넘겨야 의미 있는 `previous`
- * 값이 나온다 — 호출부(getStatsSummary)는 이 범위 전체를 커버하도록 조회한다.
+ * `events`는 선택 기간만이 아니라 직전 기간의 이벤트도 포함해서 넘겨야 array-scan 방식의
+ * `previous` 값이 의미 있다. 다만 호출부(getStatsSummary)는 더 이상 넓은 범위를 조회하지
+ * 않으므로, 정확한 `current`/`previous`를 이미 별도 count(exact) 쿼리로 갖고 있다면
+ * `exactCounts`로 넘겨 array-scan을 우회할 수 있다(필드 단위로 선택 가능 — 한쪽만 넘겨도 됨).
  */
 export function aggregatePeriodOverPeriod(
   events: EventRow[],
   from: Date,
   to: Date,
+  exactCounts?: { current?: number; previous?: number },
 ): PageviewsPeriodOverPeriod {
   const fromMs = from.getTime();
   const toMs = to.getTime();
   const length = toMs - fromMs;
   const previousStart = fromMs - length;
 
-  let current = 0;
-  let previous = 0;
+  let scannedCurrent = 0;
+  let scannedPrevious = 0;
   for (const event of events) {
     if (event.type !== "pageview") continue;
     const t = new Date(event.created_at).getTime();
     if (t >= fromMs && t <= toMs) {
-      current += 1;
+      scannedCurrent += 1;
     } else if (t >= previousStart && t < fromMs) {
-      previous += 1;
+      scannedPrevious += 1;
     }
   }
+
+  const current = exactCounts?.current ?? scannedCurrent;
+  const previous = exactCounts?.previous ?? scannedPrevious;
 
   const changePercent = previous === 0 ? null : Math.round(((current - previous) / previous) * 1000) / 10;
   return { current, previous, changePercent };
@@ -193,10 +199,12 @@ export function aggregatePeriodOverPeriod(
 /**
  * events 배열과 [from, to] 범위를 받아 StatsSummary를 계산한다.
  *
- * `events`는 반드시 [from, to]만 담고 있을 필요는 없다 — `aggregatePeriodOverPeriod`는
- * 직전 동일 길이 기간의 데이터도 필요하므로, 호출부가 더 넓은 범위(예: [from-length, to])의
- * 이벤트를 넘길 수 있다. 그 외 집계(클릭 순위/유입출처/캠페인/요일분포/일별추이)는 이 함수
- * 내부에서 [from, to]로 다시 필터링한 뒤 계산하므로 넓은 범위가 섞여 들어와도 안전하다.
+ * `events`는 [from, to] 범위로 조회된 것을 가정한다(호출부가 더 넓은 범위를 넘겨도 이 함수
+ * 내부에서 [from, to]로 다시 필터링한 뒤 계산하므로 안전하다). `aggregatePeriodOverPeriod`의
+ * `previous`(직전 동일 길이 기간)는 이 events 배열만으로는 정확히 계산할 수 없으므로 —
+ * events가 [from,to]로만 좁혀져 있다면 직전 기간 데이터가 아예 없다 — 호출부가
+ * `exactTotals.previousPageviews`로 별도 count(exact) 쿼리 결과를 넘기면 그 값을 우선 쓴다.
+ * 넘기지 않으면(또는 undefined) `aggregatePeriodOverPeriod`가 events 배열 스캔값으로 대체한다.
  *
  * `capped`는 이벤트 조회가 limit(10000)에 도달했는지를 호출부가 판단해 그대로 전달하는 값이다
  * (이 함수 자체는 순수 함수라 쿼리 결과의 캡 여부를 알 수 없다).
@@ -217,7 +225,12 @@ export function buildStatsSummary(
     totalPageviews,
     totalClicks,
     clickThroughRate: totalPageviews === 0 ? null : Math.round((totalClicks / totalPageviews) * 1000) / 10,
-    pageviewsPeriodOverPeriod: aggregatePeriodOverPeriod(events, from, to),
+    pageviewsPeriodOverPeriod: aggregatePeriodOverPeriod(
+      events,
+      from,
+      to,
+      exactTotals ? { current: exactTotals.pageviews, previous: exactTotals.previousPageviews } : undefined,
+    ),
     clicksByLink: aggregateClicksByLink(rangeEvents, links),
     dailyTrend: aggregateDailyTrend(rangeEvents, from, to),
     topReferrers: aggregateTopReferrers(rangeEvents),

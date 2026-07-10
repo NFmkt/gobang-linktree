@@ -63,6 +63,11 @@ export type PageviewsPeriodOverPeriod = {
 export type ExactTotals = {
   pageviews: number;
   clicks: number;
+  /**
+   * 직전 동일 길이 기간의 정확한 pageview 수(별도 count(exact, head) 쿼리로 조회).
+   * 생략 가능 — 생략 시 aggregatePeriodOverPeriod가 events 배열 스캔값으로 대체한다.
+   */
+  previousPageviews?: number;
 };
 
 export type StatsSummary = {

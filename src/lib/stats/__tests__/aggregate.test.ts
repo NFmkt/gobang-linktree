@@ -314,6 +314,50 @@ describe("aggregatePeriodOverPeriod", () => {
       changePercent: null,
     });
   });
+
+  it("exactCounts.current/.previous를 넘기면 events 스캔 대신 그 값을 우선 사용한다", () => {
+    // events 배열 자체는 선택 기간 2건 / 직전 기간 1건이지만, exactCounts로 다른 값을 넘긴다 —
+    // 반환값은 exactCounts를 따라야 한다(메인 쿼리가 limit(10000)에 잘려 events가 부정확해도
+    // 정확한 count(exact) 쿼리 결과를 신뢰할 수 있어야 함, B1 리뷰 1라운드 undercount 수정).
+    const events = [
+      makeEvent({ type: "pageview", created_at: "2026-07-09T00:00:00.000Z" }),
+      makeEvent({ type: "pageview", created_at: "2026-07-05T00:00:00.000Z" }),
+      makeEvent({ type: "pageview", created_at: "2026-07-01T00:00:00.000Z" }),
+    ];
+    expect(aggregatePeriodOverPeriod(events, from, to, { current: 50, previous: 20 })).toEqual({
+      current: 50,
+      previous: 20,
+      changePercent: 150,
+    });
+  });
+
+  it("exactCounts 중 한쪽만 넘기면 그 필드만 우선하고 나머지는 events 스캔값을 쓴다", () => {
+    const events = [
+      // 선택 기간: 2건
+      makeEvent({ type: "pageview", created_at: "2026-07-09T00:00:00.000Z" }),
+      makeEvent({ type: "pageview", created_at: "2026-07-05T00:00:00.000Z" }),
+      // 직전 기간: 1건
+      makeEvent({ type: "pageview", created_at: "2026-07-01T00:00:00.000Z" }),
+    ];
+    // previous만 exact로 넘김 → current는 events 스캔값(2)을 그대로 쓴다.
+    expect(aggregatePeriodOverPeriod(events, from, to, { previous: 100 })).toEqual({
+      current: 2,
+      previous: 100,
+      changePercent: -98,
+    });
+  });
+
+  it("4번째 인자를 생략하면 기존과 동일하게 events 스캔값만으로 계산한다", () => {
+    const events = [
+      makeEvent({ type: "pageview", created_at: "2026-07-09T00:00:00.000Z" }),
+      makeEvent({ type: "pageview", created_at: "2026-07-01T00:00:00.000Z" }),
+    ];
+    expect(aggregatePeriodOverPeriod(events, from, to)).toEqual({
+      current: 1,
+      previous: 1,
+      changePercent: 0,
+    });
+  });
 });
 
 describe("buildStatsSummary", () => {
