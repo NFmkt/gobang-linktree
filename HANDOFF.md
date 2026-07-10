@@ -1,11 +1,11 @@
-# 고방 링크트리 — 작업 핸드오프 (2026-07-09)
+# 고방 링크트리 — 작업 핸드오프 (2026-07-10)
 
 > 다른 계정/세션에서 이어받기 위한 인수인계 문서. 프로젝트 규칙은 상위 [CLAUDE.md](../../CLAUDE.md), 디자인 SoT는 [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md), 진행원장은 [.superpowers/sdd/progress.md](.superpowers/sdd/progress.md) 참조.
 
 ---
 
 ## 0. 한 줄 요약
-비비드 블루 리디자인 + 코드리뷰 반영 + **S1 Supabase 실연동 + S2 통계 비콘 + S3 관리자 인증 + S4 관리자 링크 CRUD 전부 완료 및 커밋됨**(test 129 pass, lint/build clean). 다음은 **S5 관리자 사이트 설정**부터.
+비비드 블루 리디자인 + 코드리뷰 반영 + **S1 Supabase 실연동 + S2 통계 비콘 + S3 관리자 인증 + S4 관리자 링크 CRUD + S5 관리자 사이트 설정 전부 완료 및 커밋됨**(test 146 pass, lint/build clean). 다음은 **S6 요약 통계 대시보드**부터.
 
 ---
 
@@ -99,11 +99,20 @@
   - handleToggleActive/handleDelete/refetch에 가드 없는 fetch(S3에서 두 번 겪은 미처리 예외 패턴 재발) → try/catch + res.ok 체크 + 에러 배너로 수정.
 - Minor 하드닝 후보(비차단): icon 필드 서버측 ICON_MAP 검증 없음(UI만 제약), 드래그 재정렬 API 실패 시 낙관적 업데이트 롤백 없음(에러 배너만 표시).
 
-### 3-E. 남은 개발 슬라이스 ([docs/TODO.md](docs/TODO.md))
-S0·S1·S2·S3·S4·S7 완료. 남은 것:
-- [ ] **S5** 관리자 사이트 설정 — S1·S3 완료돼 바로 진행 가능
+### 3-E. S5 관리자 사이트 설정 — 완료 (2026-07-10)
+계획: [docs/superpowers/plans/2026-07-09-s5-admin-site-settings.md](docs/superpowers/plans/2026-07-09-s5-admin-site-settings.md).
+- `supabase/migrations/0003_site_settings.sql` — 싱글턴 1행(`id='default'`), anon select-only, 브랜드명/bio/소셜 5종(jsonb)/제휴 이메일·라벨 시드.
+- `src/lib/site/getSiteConfig.ts` — `getLinks()`와 동일 패턴(env 있으면 DB, 없으면 정적 `SITE_CONFIG` 폴백). `SiteConfig`(camelCase, 앱)·`SiteSettingsRow`(snake_case, DB) 두 타입의 유일한 변환 지점.
+- `src/app/api/admin/settings/route.ts` — GET/PATCH, `isSafeLinkUrl()`(S4 재사용)로 소셜 URL 5종 검증, 이메일 정규식 검증, PATCH는 항상 `id='default'` 고정.
+- `src/app/admin/(protected)/settings/{page,SettingsForm}.tsx` — social은 key/label 고정·url만 편집. `layout.tsx`에 "사이트 설정" 네비 추가.
+- `src/app/{page,layout,opengraph-image}.tsx` — `SITE_CONFIG` 직접 참조 전부 `getSiteConfig()`로 교체, `layout.tsx`는 `generateMetadata()` 비동기 전환. 저장 시 공개 헤더·소셜·mailto·메타데이터·OG 이미지 3곳 모두 즉시 반영(`/opengraph-image`는 이 변경으로 static→dynamic 전환, 캐싱은 향후 과제).
+- whole-slice 최종 리뷰(opus) = With fixes(Minor만) → 영어 에러 메시지 1건 한국어로 수정 후 merge(`0fb0741`).
+- Minor 하드닝 후보(비차단): PATCH가 소셜 배열의 key/label 고정을 서버측에서 강제하지 않음(정상 플로우는 안전), `GET /api/admin/settings`는 관리 UI가 서버 컴포넌트 직접 조회를 쓰므로 현재 미사용.
+
+### 3-F. 남은 개발 슬라이스 ([docs/TODO.md](docs/TODO.md))
+S0·S1·S2·S3·S4·S5·S7 완료. 남은 것:
 - [ ] **S6** 요약 통계 대시보드 — S2·S3 완료돼 바로 진행 가능 (S2의 아그리게이션 필터 주의사항 §3-B 반영 필수)
-- 관리자 UI는 본 비비드 블루 디자인 시스템을 상속(DESIGN_SYSTEM §9), `/admin` 로그인은 `.env.local`의 `ADMIN_PASSWORD=REDACTED`로 가능. `/admin/links`에서 실제 링크 CRUD 가능.
+- 관리자 UI는 본 비비드 블루 디자인 시스템을 상속(DESIGN_SYSTEM §9), `/admin` 로그인은 `.env.local`의 `ADMIN_PASSWORD=REDACTED`로 가능. `/admin/links`·`/admin/settings`에서 실제 CRUD·설정 편집 가능.
 
 **대기 중 사용자 입력**: Vercel 계정(실 배포 시점에만 필요, 로컬 개발은 이미 가능).
 

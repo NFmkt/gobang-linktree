@@ -9,9 +9,9 @@
 - [x] S0 워킹 스켈레톤 (HITL) — 리뷰 통과. 실 Supabase/Vercel 연결은 키 확보 후 잔여.
 - [x] S1 공개 링크페이지 (AFK) — 리뷰 통과. 로컬 우선(시드 기반), 실 DB 연결은 키 확보 후 스왑.
 - [x] S2 통계 축적(비콘) (AFK) — 리뷰 통과. Route Handler(`/api/events`) + sendBeacon(fetch keepalive 폴백) + PageviewBeacon + LinkButton·AffiliateButton 클릭 연동.
-- [ ] S3 관리자 인증 (AFK)
-- [ ] S4 관리자 링크 CRUD + 드래그 정렬 (AFK)
-- [ ] S5 관리자 사이트 설정 (AFK)
+- [x] S3 관리자 인증 (AFK) — 리뷰 통과. 비번 게이트(HMAC 세션) + `src/proxy.ts` 보호 + 로그아웃.
+- [x] S4 관리자 링크 CRUD + 드래그 정렬 (AFK) — 리뷰 통과(보안 수정 반영). 링크 CRUD·아이콘 선택·active 토글·드래그 정렬.
+- [x] S5 관리자 사이트 설정 (AFK) — 리뷰 통과. `/admin/settings` 편집 → 공개 헤더/소셜/제휴 mailto/메타데이터/OG 즉시 반영.
 - [ ] S6 요약 통계 대시보드 (AFK)
 - [x] S7 브랜드 마감 (AFK) — 리뷰 통과. 파비콘·OG(한글 렌더 OK)·아이콘세트 확정·접근성 점검.
 
@@ -137,20 +137,27 @@ Next.js(App Router) + Tailwind + Pretendard 폰트 기반 프로젝트를 세우
 
 ---
 
-## S5 — 관리자 사이트 설정 (AFK)
+## S5 — 관리자 사이트 설정 (AFK) — 완료 (2026-07-10)
 
 ### What to build
 `site_settings`(브랜드명, bio, 로고, 소셜 URL 3종, **제휴 수신 이메일**)를 두고 `/admin/settings`에서 편집한다. 저장 시 공개페이지 헤더·소셜·제휴 `mailto:` 주소에 반영된다. 제휴 이메일은 아무 주소로나 자유롭게 변경 가능(기본 neoflatworks2@gmail.com).
 
 ### Acceptance criteria
-- [ ] `site_settings` 스키마: brand_name, bio, logo, social(home/blog/youtube), affiliate_email
-- [ ] `/admin/settings` 편집 폼 (라벨·검증·저장 피드백)
-- [ ] 저장 → 공개 헤더/소셜/mailto 즉시 반영
-- [ ] 제휴 이메일 자유 변경 → mailto 버튼에 반영 확인
-- [ ] 설정 저장·반영 테스트
+- [x] `site_settings` 스키마: brand_name, bio, social(home/blog/instagram/youtube/kakao 5종 jsonb), affiliate_email, affiliate_label — 싱글턴 1행(`id='default'`). `logo`는 별도 컬럼 없음(로고는 정적 `public/bi.png`, `logoLabel`은 DB 미저장·정적값 유지, S7에서 확정된 결정)
+- [x] `/admin/settings` 편집 폼 (라벨·검증·저장 피드백) — social은 key/label 고정·url만 편집
+- [x] 저장 → 공개 헤더/소셜/mailto/메타데이터/OG 이미지 즉시 반영 (`getSiteConfig()` 단일 소스)
+- [x] 제휴 이메일 자유 변경 → mailto 버튼에 반영 확인
+- [x] 설정 저장·반영 테스트
 
 ### Blocked by
 - S1, S3
+
+### 구현 메모 (2026-07-10 완료)
+- 계획: `docs/superpowers/plans/2026-07-09-s5-admin-site-settings.md`. whole-slice 최종 리뷰(opus) = With fixes(Minor만, 병합 차단 없음) → 영어 에러 메시지 1건 한국어로 수정 후 merge(`0fb0741`).
+- 데이터 레이어: `src/lib/site/getSiteConfig.ts` — `getLinks()`와 동일 패턴(env 있으면 DB, 없으면 정적 `SITE_CONFIG` 폴백). `SiteConfig`(camelCase, 앱 레이어)·`SiteSettingsRow`(snake_case, DB 레이어) 두 타입의 경계가 이 함수 하나로만 지켜짐 — 관리 API/UI는 snake_case, 공개 페이지/OG/메타데이터는 camelCase.
+- 관리 API(`/api/admin/settings`)는 `createServiceSupabaseClient()`(service_role) + `src/proxy.ts` 보호, `isSafeLinkUrl()`(S4 재사용, 재구현 안 함)로 소셜 URL 5종 서버측 검증. PATCH는 항상 `id='default'` 고정(body의 id 무시), INSERT/DELETE 엔드포인트 없음 — 싱글턴 무결성 유지.
+- 공개 페이지·`layout.tsx`(`generateMetadata` 비동기 전환)·`opengraph-image.tsx` 3곳 전부 `getSiteConfig()`로 연동 → 관리자 저장 시 즉시 반영(단, `/opengraph-image`는 이번 변경으로 static→dynamic 전환, 캐싱은 향후 과제).
+- Minor 하드닝 후보(비차단): PATCH가 social 배열의 key/label 고정을 서버측에서 강제하지 않음(정상 플로우는 클라이언트가 보존하므로 안전, 방어적으로 서버 병합 고려 가능), `GET /api/admin/settings`는 관리 UI가 서버 컴포넌트에서 직접 조회해 실제로는 미사용(데드코드는 아니고 향후 클라이언트 전용 확장 대비용으로 유지).
 
 ---
 
