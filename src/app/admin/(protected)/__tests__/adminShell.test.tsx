@@ -68,9 +68,17 @@ describe("AdminLayout", () => {
 });
 
 describe("AdminHomePage", () => {
-  it("인증 완료 메시지를 렌더한다", async () => {
+  it("링크 관리·사이트 설정·통계로 이동하는 카드 링크 3개를 렌더한다", async () => {
     const AdminHomePage = (await import("../page")).default;
     render(<AdminHomePage />);
-    expect(screen.getByText(/인증되었습니다/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /링크 관리/ })).toHaveAttribute(
+      "href",
+      "/admin/links",
+    );
+    expect(screen.getByRole("link", { name: /사이트 설정/ })).toHaveAttribute(
+      "href",
+      "/admin/settings",
+    );
+    expect(screen.getByRole("link", { name: /통계/ })).toHaveAttribute("href", "/admin/stats");
   });
 });
