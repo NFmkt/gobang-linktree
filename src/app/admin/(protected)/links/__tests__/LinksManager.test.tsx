@@ -24,7 +24,7 @@ describe("LinksManager", () => {
     expect(screen.getByText("B 링크")).toBeInTheDocument();
   });
 
-  it("노출 체크박스를 토글하면 PATCH 후 목록을 다시 불러온다", async () => {
+  it("노출 토글을 클릭하면 PATCH 후 목록을 다시 불러온다", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(new Response(null, { status: 200 }))
@@ -37,8 +37,8 @@ describe("LinksManager", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<LinksManager initialLinks={links} />);
-    const checkboxes = screen.getAllByRole("checkbox");
-    fireEvent.click(checkboxes[0]);
+    const toggles = screen.getAllByRole("switch");
+    fireEvent.click(toggles[0]);
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith("/api/admin/links/a", {
@@ -93,7 +93,7 @@ describe("LinksManager", () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
 
     render(<LinksManager initialLinks={links} />);
-    fireEvent.click(screen.getAllByRole("checkbox")[0]);
+    fireEvent.click(screen.getAllByRole("switch")[0]);
 
     await waitFor(() => {
       expect(
@@ -107,7 +107,7 @@ describe("LinksManager", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<LinksManager initialLinks={links} />);
-    fireEvent.click(screen.getAllByRole("checkbox")[0]);
+    fireEvent.click(screen.getAllByRole("switch")[0]);
 
     await waitFor(() => {
       expect(screen.getByText("노출 상태 변경에 실패했습니다.")).toBeInTheDocument();

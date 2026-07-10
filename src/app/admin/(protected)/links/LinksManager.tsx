@@ -3,6 +3,7 @@
 import { useState, type DragEvent } from "react";
 import type { Link } from "@/lib/links/types";
 import { LinkIcon } from "@/components/icons/LinkIcon";
+import { ToggleSwitch } from "@/components/admin/ToggleSwitch";
 import { reorderLinks } from "@/lib/admin/reorderLinks";
 import { LinkForm } from "./LinkForm";
 
@@ -103,7 +104,7 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
         <button
           type="button"
           onClick={() => setIsCreating(true)}
-          className="focus-glow rounded-[var(--r-sm)] bg-[var(--color-primary)] px-3 py-1.5 text-[13.5px] font-bold text-[var(--color-on-primary)]"
+          className="focus-glow min-h-11 rounded-[var(--r-sm)] bg-[var(--color-primary)] px-3 py-1.5 text-[13.5px] font-bold text-[var(--color-on-primary)]"
         >
           + 링크 추가
         </button>
@@ -148,25 +149,24 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
               </span>
               <span className="truncate text-[12.5px] text-[var(--color-ink-2)]">{link.url}</span>
             </span>
-            <label className="flex items-center gap-1.5 text-[12.5px] text-[var(--color-ink-2)]">
-              <input
-                type="checkbox"
+            <span className="flex items-center gap-1.5 text-[12.5px] text-[var(--color-ink-2)]">
+              <ToggleSwitch
                 checked={link.active}
                 onChange={() => void handleToggleActive(link)}
               />
               노출
-            </label>
+            </span>
             <button
               type="button"
               onClick={() => setEditingLink(link)}
-              className="focus-glow rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-border-strong)] px-2.5 py-1 text-[12.5px] font-semibold text-[var(--color-ink-2)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+              className="focus-glow min-h-11 rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-border-strong)] px-2.5 py-1 text-[12.5px] font-semibold text-[var(--color-ink-2)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
             >
               수정
             </button>
             <button
               type="button"
               onClick={() => void handleDelete(link)}
-              className="focus-glow rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-border-strong)] px-2.5 py-1 text-[12.5px] font-semibold text-[var(--color-danger)]"
+              className="focus-glow min-h-11 rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-border-strong)] px-2.5 py-1 text-[12.5px] font-semibold text-[var(--color-danger)]"
             >
               삭제
             </button>

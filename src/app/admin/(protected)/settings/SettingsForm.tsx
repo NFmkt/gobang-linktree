@@ -122,7 +122,7 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
       <button
         type="submit"
         disabled={submitting}
-        className="focus-glow flex h-10 items-center justify-center rounded-[var(--r-sm)] bg-[var(--color-primary)] text-[14px] font-bold text-[var(--color-on-primary)] disabled:opacity-50"
+        className="focus-glow flex min-h-11 items-center justify-center rounded-[var(--r-sm)] bg-[var(--color-primary)] text-[14px] font-bold text-[var(--color-on-primary)] disabled:opacity-50"
       >
         {submitting ? "저장 중..." : "저장"}
       </button>

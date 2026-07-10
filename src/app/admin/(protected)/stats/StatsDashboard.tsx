@@ -64,7 +64,7 @@ export function StatsDashboard({ summary }: StatsDashboardProps) {
           type="button"
           onClick={() => void handleReset()}
           disabled={resetting}
-          className="focus-glow rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-border-strong)] px-3 py-1.5 text-[12.5px] font-semibold text-[var(--color-danger)] disabled:opacity-50"
+          className="focus-glow min-h-11 rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-border-strong)] px-3 py-1.5 text-[12.5px] font-semibold text-[var(--color-danger)] disabled:opacity-50"
         >
           {resetting ? "초기화 중..." : "통계 초기화"}
         </button>
@@ -117,7 +117,7 @@ export function StatsDashboard({ summary }: StatsDashboardProps) {
                 <button
                   type="button"
                   onClick={() => setTrendRange(7)}
-                  className={`focus-glow rounded-[var(--r-sm)] px-2.5 py-1 text-[12.5px] font-semibold ${
+                  className={`focus-glow min-h-11 rounded-[var(--r-sm)] px-2.5 py-1 text-[12.5px] font-semibold ${
                     trendRange === 7
                       ? "bg-[var(--color-primary)] text-[var(--color-on-primary)]"
                       : "text-[var(--color-ink-2)]"
@@ -128,7 +128,7 @@ export function StatsDashboard({ summary }: StatsDashboardProps) {
                 <button
                   type="button"
                   onClick={() => setTrendRange(30)}
-                  className={`focus-glow rounded-[var(--r-sm)] px-2.5 py-1 text-[12.5px] font-semibold ${
+                  className={`focus-glow min-h-11 rounded-[var(--r-sm)] px-2.5 py-1 text-[12.5px] font-semibold ${
                     trendRange === 30
                       ? "bg-[var(--color-primary)] text-[var(--color-on-primary)]"
                       : "text-[var(--color-ink-2)]"
