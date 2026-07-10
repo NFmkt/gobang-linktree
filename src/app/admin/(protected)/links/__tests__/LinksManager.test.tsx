@@ -24,6 +24,11 @@ describe("LinksManager", () => {
     expect(screen.getByText("B 링크")).toBeInTheDocument();
   });
 
+  it("노출 토글에 접근성 이름 '노출'이 노출된다", () => {
+    render(<LinksManager initialLinks={links} />);
+    expect(screen.getAllByRole("switch", { name: "노출" })).toHaveLength(links.length);
+  });
+
   it("노출 토글을 클릭하면 PATCH 후 목록을 다시 불러온다", async () => {
     const fetchMock = vi
       .fn()

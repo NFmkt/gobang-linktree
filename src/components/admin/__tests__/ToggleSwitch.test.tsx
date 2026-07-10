@@ -4,39 +4,44 @@ import { ToggleSwitch } from "../ToggleSwitch";
 
 describe("ToggleSwitch", () => {
   it("role=switch로 렌더되고 aria-checked가 checked prop을 반영한다", () => {
-    render(<ToggleSwitch checked={true} onChange={() => {}} />);
+    render(<ToggleSwitch checked={true} onChange={() => {}} aria-label="노출" />);
     expect(screen.getByRole("switch")).toHaveAttribute("aria-checked", "true");
   });
 
   it("checked=false면 aria-checked=false를 반영한다", () => {
-    render(<ToggleSwitch checked={false} onChange={() => {}} />);
+    render(<ToggleSwitch checked={false} onChange={() => {}} aria-label="노출" />);
     expect(screen.getByRole("switch")).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("aria-label prop이 접근성 이름으로 노출된다", () => {
+    render(<ToggleSwitch checked={false} onChange={() => {}} aria-label="노출" />);
+    expect(screen.getByRole("switch", { name: "노출" })).toBeInTheDocument();
   });
 
   it("클릭 시 onChange를 호출한다", () => {
     const onChange = vi.fn();
-    render(<ToggleSwitch checked={false} onChange={onChange} />);
+    render(<ToggleSwitch checked={false} onChange={onChange} aria-label="노출" />);
     fireEvent.click(screen.getByRole("switch"));
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 
   it("Enter 키로 토글할 수 있다", () => {
     const onChange = vi.fn();
-    render(<ToggleSwitch checked={false} onChange={onChange} />);
+    render(<ToggleSwitch checked={false} onChange={onChange} aria-label="노출" />);
     fireEvent.keyDown(screen.getByRole("switch"), { key: "Enter" });
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 
   it("Space 키로 토글할 수 있다", () => {
     const onChange = vi.fn();
-    render(<ToggleSwitch checked={false} onChange={onChange} />);
+    render(<ToggleSwitch checked={false} onChange={onChange} aria-label="노출" />);
     fireEvent.keyDown(screen.getByRole("switch"), { key: " " });
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 
   it("다른 키 입력에는 반응하지 않는다", () => {
     const onChange = vi.fn();
-    render(<ToggleSwitch checked={false} onChange={onChange} />);
+    render(<ToggleSwitch checked={false} onChange={onChange} aria-label="노출" />);
     fireEvent.keyDown(screen.getByRole("switch"), { key: "a" });
     expect(onChange).not.toHaveBeenCalled();
   });

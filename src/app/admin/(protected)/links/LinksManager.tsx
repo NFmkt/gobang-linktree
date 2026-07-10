@@ -153,6 +153,7 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
               <ToggleSwitch
                 checked={link.active}
                 onChange={() => void handleToggleActive(link)}
+                aria-label="노출"
               />
               노출
             </span>
