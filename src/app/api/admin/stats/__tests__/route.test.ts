@@ -1,4 +1,165 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
+import { NextRequest } from "next/server";
+import type { StatsSummary } from "@/lib/stats/types";
+
+function makeSummary(overrides: Partial<StatsSummary> = {}): StatsSummary {
+  return {
+    totalPageviews: 10,
+    totalClicks: 5,
+    clickThroughRate: 50,
+    pageviewsPeriodOverPeriod: { current: 10, previous: 8, changePercent: 25 },
+    clicksByLink: [],
+    dailyTrend: [],
+    topReferrers: [],
+    topCampaigns: [],
+    weekdayDistribution: [],
+    capped: false,
+    ...overrides,
+  };
+}
+
+describe("GET /api/admin/stats", () => {
+  afterEach(() => {
+    vi.doUnmock("@/lib/stats/getStatsSummary");
+    vi.resetModules();
+  });
+
+  it("from/to가 유효하면 getStatsSummary를 호출해 200과 StatsSummary를 그대로 응답한다", async () => {
+    const summary = makeSummary();
+    const getStatsSummary = vi.fn().mockResolvedValue(summary);
+    vi.doMock("@/lib/stats/getStatsSummary", () => ({ getStatsSummary }));
+    vi.resetModules();
+
+    const { GET } = await import("../route");
+    const req = new NextRequest(
+      "http://localhost/api/admin/stats?from=2026-07-01&to=2026-07-10",
+    );
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body).toEqual(summary);
+    expect(getStatsSummary).toHaveBeenCalledTimes(1);
+    const [calledFrom, calledTo] = getStatsSummary.mock.calls[0];
+    expect(calledFrom).toBeInstanceOf(Date);
+    expect(calledTo).toBeInstanceOf(Date);
+    expect(calledFrom.toISOString()).toBe(new Date("2026-07-01").toISOString());
+    expect(calledTo.toISOString()).toBe(new Date("2026-07-10").toISOString());
+  });
+
+  it("capped:true인 경우 응답 바디에 그대로 포함된다", async () => {
+    const summary = makeSummary({ capped: true });
+    const getStatsSummary = vi.fn().mockResolvedValue(summary);
+    vi.doMock("@/lib/stats/getStatsSummary", () => ({ getStatsSummary }));
+    vi.resetModules();
+
+    const { GET } = await import("../route");
+    const req = new NextRequest(
+      "http://localhost/api/admin/stats?from=2026-07-01&to=2026-07-10",
+    );
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.capped).toBe(true);
+  });
+
+  it("from이 없으면 400을 반환한다", async () => {
+    const getStatsSummary = vi.fn();
+    vi.doMock("@/lib/stats/getStatsSummary", () => ({ getStatsSummary }));
+    vi.resetModules();
+
+    const { GET } = await import("../route");
+    const req = new NextRequest("http://localhost/api/admin/stats?to=2026-07-10");
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(typeof body.error).toBe("string");
+    expect(getStatsSummary).not.toHaveBeenCalled();
+  });
+
+  it("to가 없으면 400을 반환한다", async () => {
+    const getStatsSummary = vi.fn();
+    vi.doMock("@/lib/stats/getStatsSummary", () => ({ getStatsSummary }));
+    vi.resetModules();
+
+    const { GET } = await import("../route");
+    const req = new NextRequest("http://localhost/api/admin/stats?from=2026-07-01");
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(typeof body.error).toBe("string");
+    expect(getStatsSummary).not.toHaveBeenCalled();
+  });
+
+  it("from/to가 모두 없으면 400을 반환한다", async () => {
+    const getStatsSummary = vi.fn();
+    vi.doMock("@/lib/stats/getStatsSummary", () => ({ getStatsSummary }));
+    vi.resetModules();
+
+    const { GET } = await import("../route");
+    const req = new NextRequest("http://localhost/api/admin/stats");
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(typeof body.error).toBe("string");
+    expect(getStatsSummary).not.toHaveBeenCalled();
+  });
+
+  it("from이 올바른 날짜 형식이 아니면 400을 반환한다", async () => {
+    const getStatsSummary = vi.fn();
+    vi.doMock("@/lib/stats/getStatsSummary", () => ({ getStatsSummary }));
+    vi.resetModules();
+
+    const { GET } = await import("../route");
+    const req = new NextRequest(
+      "http://localhost/api/admin/stats?from=not-a-date&to=2026-07-10",
+    );
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(typeof body.error).toBe("string");
+    expect(getStatsSummary).not.toHaveBeenCalled();
+  });
+
+  it("to가 올바른 날짜 형식이 아니면 400을 반환한다", async () => {
+    const getStatsSummary = vi.fn();
+    vi.doMock("@/lib/stats/getStatsSummary", () => ({ getStatsSummary }));
+    vi.resetModules();
+
+    const { GET } = await import("../route");
+    const req = new NextRequest(
+      "http://localhost/api/admin/stats?from=2026-07-01&to=not-a-date",
+    );
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(typeof body.error).toBe("string");
+    expect(getStatsSummary).not.toHaveBeenCalled();
+  });
+
+  it("from > to이면 400을 반환한다", async () => {
+    const getStatsSummary = vi.fn();
+    vi.doMock("@/lib/stats/getStatsSummary", () => ({ getStatsSummary }));
+    vi.resetModules();
+
+    const { GET } = await import("../route");
+    const req = new NextRequest(
+      "http://localhost/api/admin/stats?from=2026-07-10&to=2026-07-01",
+    );
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(typeof body.error).toBe("string");
+    expect(getStatsSummary).not.toHaveBeenCalled();
+  });
+});
 
 describe("DELETE /api/admin/stats", () => {
   afterEach(() => {
