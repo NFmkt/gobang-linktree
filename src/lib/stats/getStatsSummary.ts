@@ -7,12 +7,16 @@ import type { EventRow, LinkTitleRow, StatsSummary } from "./types";
  *
  * 개인 링크트리 규모 트래픽을 가정해 limit(10000)까지만 조회한다 —
  * 이 이상 쌓이면 페이지네이션/집계 뷰가 필요하다(향후 과제).
+ * 내림차순 정렬 후 자르므로, 10000건을 넘을 경우 잘려나가는 쪽은
+ * 항상 가장 오래된 이벤트다 — 최근 7/30일 추이가 최신 데이터를
+ * 유지한 채로 계산된다(오름차순+자르기였다면 반대로 최신 데이터가
+ * 유실됐을 것, task-2 리뷰에서 발견).
  */
 export async function getStatsSummary(): Promise<StatsSummary> {
   const supabase = createServiceSupabaseClient();
 
   const [eventsResult, linksResult] = await Promise.all([
-    supabase.from("events").select("*").order("created_at", { ascending: true }).limit(10000),
+    supabase.from("events").select("*").order("created_at", { ascending: false }).limit(10000),
     supabase.from("links").select("id, title"),
   ]);
 
