@@ -28,7 +28,7 @@ function getRelativeLuminance(r: number, g: number, b: number): number {
 }
 
 /**
- * Parse a hex color string (e.g., "#e5484d" or "e5484d") to RGB components.
+ * Parse a hex color string (e.g., "#336699" or "336699") to RGB components.
  *
  * @param hex Hex color string
  * @returns Object with r, g, b components (0-255)
@@ -55,7 +55,7 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } {
  * (L1 + 0.05) / (L2 + 0.05)
  * where L1 is the relative luminance of the lighter color and L2 is the relative luminance of the darker color.
  *
- * @param color1 Hex color string (e.g., "#e5484d")
+ * @param color1 Hex color string (e.g., "#336699")
  * @param color2 Hex color string (e.g., "#ffffff")
  * @returns Contrast ratio (1-21)
  */
