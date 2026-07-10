@@ -5,6 +5,7 @@
 > 개발 순서: S0 → S1 → (S2·S3 병렬) → (S4·S5 병렬) → S6 → S7
 
 ## 진행 현황
+- [ ] **A — 관리자 UX 개선 (2026-07-10)** — `/ui-ux-pro-max` 리뷰 기반, A1~A4 4개 슬라이스. 아래 "관리자 UX 개선" 섹션 참조.
 - [x] **RD 비비드 블루 리디자인 (2026-07-08)** — 테마 전환 완료. 아래 "리디자인" 섹션 참조.
 - [x] S0 워킹 스켈레톤 (HITL) — 리뷰 통과. 실 Supabase/Vercel 연결은 키 확보 후 잔여.
 - [x] S1 공개 링크페이지 (AFK) — 리뷰 통과. 로컬 우선(시드 기반), 실 DB 연결은 키 확보 후 스왑.
@@ -204,3 +205,69 @@ icon-design 스킬로 틸 라인 아이콘 세트(링크 드롭다운용)와 GYI
 
 ### Blocked by
 - S1
+
+---
+
+## 관리자 UX 개선 (2026-07-10)
+
+> `/ui-ux-pro-max` 리뷰(2026-07-10) → `@grill-me`로 4개 결정 분기 확정 → `@to-issues`로 A1~A4 분할·승인. 전부 AFK, 상호 독립(병렬 진행 가능).
+
+## A1 — danger 색상 토큰 교체 (AFK)
+
+### What to build
+`--color-danger`(#e5484d)가 흰 배경 대비 약 3.9:1로 WCAG AA(4.5:1) 미달. 색상값 자체를 더 어두운 톤(#d1373c 부근)으로 교체해 폰트 굵기와 무관하게 전역에서 대비를 확보한다.
+
+### Acceptance criteria
+- [ ] `globals.css`의 `--color-danger` 토큰 교체
+- [ ] 교체 색상이 흰 배경(`--color-surface`/`--color-bg`) 대비 4.5:1 이상
+- [ ] 로그인/링크폼/설정폼 에러 메시지, 삭제 버튼, 통계 초기화 버튼에 자동 반영 확인 (별도 하드코딩 없음)
+
+### Blocked by
+- None — can start immediately
+
+---
+
+## A2 — 관리자 헤더 active 탭 표시 (AFK)
+
+### What to build
+관리자 헤더의 3개 탭(링크 관리/사이트 설정/통계)에 현재 위치를 표시하는 active state가 없다. `usePathname()`으로 현재 경로를 비교해 활성 탭에 `text-[var(--color-primary)] font-bold`를 적용한다.
+
+### Acceptance criteria
+- [ ] 각 탭 클릭 시 해당 경로에서 자신만 active 스타일로 표시
+- [ ] 비활성 탭은 기존 hover 스타일 유지
+- [ ] 레이아웃이 서버 컴포넌트라 필요 시 탭 네비게이션만 클라이언트 컴포넌트로 분리
+
+### Blocked by
+- None — can start immediately
+
+---
+
+## A3 — 터치 타깃 확대 + 노출 토글 스위치 (AFK)
+
+### What to build
+관리자 페이지 전반의 버튼(헤더 탭, 수정/삭제, 저장/취소, 통계 초기화 등)이 44px 미만으로 터치 타깃 기준 미달. 전체 버튼에 `min-h-11`(44px) 이상을 적용하고, "노출" 체크박스(네이티브)를 디자인 토큰 기반 커스텀 토글 스위치 컴포넌트로 교체한다.
+
+### Acceptance criteria
+- [ ] 관리자 페이지 내 모든 클릭 가능 버튼이 44×44px 이상
+- [ ] 커스텀 토글 스위치 컴포넌트 신설(디자인 토큰 사용, 키보드 접근 가능 — Enter/Space 토글)
+- [ ] `LinksManager`의 "노출" 체크박스를 신규 토글로 교체, 기존 `handleToggleActive` 로직과 연동
+- [ ] 토글 컴포넌트 단위 테스트
+
+### Blocked by
+- None — can start immediately
+
+---
+
+## A4 — 링크 재정렬 키보드 대안 (AFK)
+
+### What to build
+`LinksManager`의 드래그 앤 드롭 재정렬은 키보드/스크린리더 대안이 없다. 각 링크 행에 위/아래 이동 버튼을 추가해 기존 드래그 기능과 병행 유지한다. 삭제/통계초기화의 `window.confirm()`은 변경하지 않는다.
+
+### Acceptance criteria
+- [ ] 각 링크 행에 위/아래 이동 버튼 추가 (맨 위/맨 아래에서는 해당 방향 버튼 비활성화)
+- [ ] 버튼 클릭 시 기존 `reorderLinks` + `/api/admin/links/reorder` 흐름 재사용
+- [ ] 기존 드래그 앤 드롭 기능은 그대로 유지 (회귀 없음)
+- [ ] 재정렬 로직 테스트 (위/아래 버튼 기준)
+
+### Blocked by
+- None — can start immediately
