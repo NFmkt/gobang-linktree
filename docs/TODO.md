@@ -12,7 +12,7 @@
 - [x] S3 관리자 인증 (AFK) — 리뷰 통과. 비번 게이트(HMAC 세션) + `src/proxy.ts` 보호 + 로그아웃.
 - [x] S4 관리자 링크 CRUD + 드래그 정렬 (AFK) — 리뷰 통과(보안 수정 반영). 링크 CRUD·아이콘 선택·active 토글·드래그 정렬.
 - [x] S5 관리자 사이트 설정 (AFK) — 리뷰 통과. `/admin/settings` 편집 → 공개 헤더/소셜/제휴 mailto/메타데이터/OG 즉시 반영.
-- [ ] S6 요약 통계 대시보드 (AFK)
+- [x] S6 요약 통계 대시보드 (AFK) — 리뷰 통과(Important 1건 반영 후 merge). KPI+클릭순위+7/30일 추이+유입출처+초기화.
 - [x] S7 브랜드 마감 (AFK) — 리뷰 통과. 파비콘·OG(한글 렌더 OK)·아이콘세트 확정·접근성 점검.
 
 ---
@@ -161,21 +161,32 @@ Next.js(App Router) + Tailwind + Pretendard 폰트 기반 프로젝트를 세우
 
 ---
 
-## S6 — 요약 통계 대시보드 (AFK)
+## S6 — 요약 통계 대시보드 (AFK) — 완료 (2026-07-10)
 
 ### What to build
 `/admin/stats`에서 축적된 이벤트를 요약 시각화한다: 총 방문수, 링크별 클릭수 순위(막대), 최근 7/30일 추이(라인), 유입출처 top(막대). 통계 수동 삭제/초기화 기능 포함.
 
 ### Acceptance criteria
-- [ ] 총 방문수 + 링크별 클릭수 순위(막대)
-- [ ] 최근 7일/30일 추이(라인) 전환
-- [ ] 유입출처 top(referrer/utm 기준, 막대)
-- [ ] 통계 수동 삭제/초기화 (확인 다이얼로그)
-- [ ] 데이터 없을 때 empty state
-- [ ] 집계 쿼리 테스트
+- [x] 총 방문수 + 링크별 클릭수 순위(막대)
+- [x] 최근 7일/30일 추이(라인) 전환
+- [x] 유입출처 top(referrer/utm 기준, 막대)
+- [x] 통계 수동 삭제/초기화 (확인 다이얼로그)
+- [x] 데이터 없을 때 empty state
+- [x] 집계 쿼리 테스트
 
 ### Blocked by
 - S2, S3
+
+### 구현 메모 (2026-07-10 완료)
+- 계획: `docs/superpowers/plans/2026-07-10-s6-stats-dashboard.md`. 차트는 신규 npm 패키지 없이 커스텀 SVG로 구현(사용자 사전 승인, AskUserQuestion으로 확인).
+- `src/lib/stats/{types,aggregate}.ts` — 순수 집계 함수. `type='click'`으로 필터해 S2 이월 주의사항(pageview 오염 방지) 준수, utm_source > referrer hostname > "직접 방문" 우선순위, 삭제된 링크는 "삭제된 링크"로 표시.
+- `src/lib/stats/getStatsSummary.ts` — service_role로 events(limit 10000, `ascending:false`)+links 병렬 조회 후 집계. **태스크 리뷰에서 발견·수정**: 원래 계획서 예시가 `ascending:true`라 10000건 초과 시 최신 이벤트가 잘려나가는 결함이었음.
+- `src/app/api/admin/stats/route.ts` — DELETE, service_role, `.not("id","is",null)`로 WHERE 없는 delete 우회.
+- `src/components/admin/{BarChart,LineChart}.tsx` — SVG/div 기반, `--color-primary` 단독 사용. **whole-slice 리뷰 Important 반영**: `key={item.label}`이 "삭제된 링크" 라벨 중복 시 React key 충돌 → `key={`${item.label}-${index}`}`로 수정.
+- `src/app/admin/(protected)/stats/{page,StatsDashboard}.tsx` — KPI 카드+클릭순위+7/30일 토글+유입출처+empty state+초기화(confirm→DELETE→router.refresh).
+- whole-slice 최종 리뷰(opus) = With fixes → Important 1건(위 BarChart key) 반영 후 커밋.
+- Minor 하드닝 후보(비차단, 후속 과제로 보류): (a) `limit(10000)` 초과 시 "총 방문수/총 클릭수" 라벨이 실제로는 "최근 1만 건 내 집계"로 캡되는 의미 괴리, (b) 동점 정렬이 삽입 순서에 의존해 비결정적, (c) 서로 다른 삭제 링크가 "삭제된 링크" 막대 여러 개로 각각 표시(합산 안 됨).
+- **이 시점에 S0~S7 전체 개발 슬라이스 완료.**
 
 ---
 

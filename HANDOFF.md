@@ -5,7 +5,7 @@
 ---
 
 ## 0. 한 줄 요약
-비비드 블루 리디자인 + 코드리뷰 반영 + **S1 Supabase 실연동 + S2 통계 비콘 + S3 관리자 인증 + S4 관리자 링크 CRUD + S5 관리자 사이트 설정 전부 완료 및 커밋됨**(test 146 pass, lint/build clean). 다음은 **S6 요약 통계 대시보드**부터.
+비비드 블루 리디자인 + 코드리뷰 반영 + **S1 Supabase 실연동 + S2 통계 비콘 + S3 관리자 인증 + S4 관리자 링크 CRUD + S5 관리자 사이트 설정 + S6 요약 통계 대시보드 전부 완료 및 커밋됨**(test 178 pass, lint/build clean). **S0~S7 전체 개발 슬라이스 완료.** 다음 단계는 전체 브랜치 최종 통합 여부와 Vercel 실 배포 — 사용자 확인 대기.
 
 ---
 
@@ -109,12 +109,24 @@
 - whole-slice 최종 리뷰(opus) = With fixes(Minor만) → 영어 에러 메시지 1건 한국어로 수정 후 merge(`0fb0741`).
 - Minor 하드닝 후보(비차단): PATCH가 소셜 배열의 key/label 고정을 서버측에서 강제하지 않음(정상 플로우는 안전), `GET /api/admin/settings`는 관리 UI가 서버 컴포넌트 직접 조회를 쓰므로 현재 미사용.
 
-### 3-F. 남은 개발 슬라이스 ([docs/TODO.md](docs/TODO.md))
-S0·S1·S2·S3·S4·S5·S7 완료. 남은 것:
-- [ ] **S6** 요약 통계 대시보드 — S2·S3 완료돼 바로 진행 가능 (S2의 아그리게이션 필터 주의사항 §3-B 반영 필수)
-- 관리자 UI는 본 비비드 블루 디자인 시스템을 상속(DESIGN_SYSTEM §9), `/admin` 로그인은 `.env.local`의 `ADMIN_PASSWORD=REDACTED`로 가능. `/admin/links`·`/admin/settings`에서 실제 CRUD·설정 편집 가능.
+### 3-F. S6 요약 통계 대시보드 — 완료 (2026-07-10)
+계획: [docs/superpowers/plans/2026-07-10-s6-stats-dashboard.md](docs/superpowers/plans/2026-07-10-s6-stats-dashboard.md) (커밋 `c8c141b`). 차트는 신규 npm 패키지 없이 커스텀 SVG로 구현(사용자 사전 승인, AskUserQuestion으로 확인).
 
-**대기 중 사용자 입력**: Vercel 계정(실 배포 시점에만 필요, 로컬 개발은 이미 가능).
+- `src/lib/stats/{types,aggregate}.ts`(커밋 `3903c27`) — `countByType`/`aggregateClicksByLink`/`aggregateDailyTrend`/`aggregateTopReferrers`/`buildStatsSummary` 순수 함수. `type='click'`/`type='pageview'` 필터링 정확(S2 이월 주의사항 §3-B 준수), `utm_source > referrer hostname > "직접 방문"` 우선순위, 삭제된 링크는 "삭제된 링크"로 표시.
+- `src/lib/stats/getStatsSummary.ts`(커밋 `82f2b64` + 수정 `bbddf5b`) — service_role로 `events`(전량, limit 10000)+`links`(id,title) 병렬 조회 후 위 순수 함수로 집계. **태스크 리뷰에서 발견·수정**: 원래 `.order("created_at",{ascending:true}).limit(10000)`이라 10000건 초과 시 최신 이벤트가 잘려나가 최근 추이가 비는 결함이었음(계획서 예시 코드 자체의 결함) → `ascending:false`로 수정. Map 기반 집계라 정렬 방향이 결과 정확성에는 영향 없음(잘리는 대상만 달라짐).
+- `src/app/api/admin/stats/route.ts`(커밋 `ad19c81`) — `DELETE`, service_role, `.not("id","is",null)`로 WHERE 없는 delete 우회. 인증은 기존 `src/proxy.ts`가 처리.
+- `src/components/admin/{BarChart,LineChart}.tsx`(커밋 `0cd5ad1`) — 신규 패키지 없이 SVG/div 기반, `--color-primary` 단독 사용(신규 CSS 토큰 추가 없음).
+- `src/app/admin/(protected)/stats/{page,StatsDashboard}.tsx`(커밋 `5666915`) — KPI 카드(총 방문수/총 클릭수) + 링크별 클릭 순위 BarChart + 7/30일 토글 LineChart + 유입출처 top BarChart + empty state + 통계 초기화(confirm→DELETE→`router.refresh()`, try/catch/finally 정확). `layout.tsx`에 "통계" 네비 추가. **브리프에서 의도적으로 벗어난 부분(태스크 리뷰에서 정당성 검증 완료)**: `page.tsx`가 ESLint `react-hooks/error-boundaries` 룰 때문에 try/catch 안에서 JSX를 반환하지 않도록 구조 조정(결과를 지역 변수에 담아 try/catch 밖에서 조건 분기) — 동작·문구는 원래 계획과 완전 동일.
+- **whole-slice 최종 리뷰(opus, base=`c8c141b` head=`5666915`) = With fixes.**
+  - **Important 1건(반영·커밋 완료 `be312d7`)**: `BarChart`의 `key={item.label}`이 라벨 중복 시 React key 충돌. 관리자가 클릭 실적 있던 링크를 2개 이상 삭제하면 둘 다 `title:"삭제된 링크"`로 집계돼(`aggregateClicksByLink`) label이 겹치므로 **거의 확실히 발생**. `key={`${item.label}-${index}`}`로 수정, `npm run lint`/`npx next build` 재검증(clean) 후 커밋.
+  - Minor 3건(비차단, 후속과제로 보류 결정): (a) `limit(10000)` 초과 시 "총 방문수/총 클릭수" 라벨이 실제로는 "최근 1만 건 내 집계"로 캡되는 의미 괴리(개인 링크트리 규모에선 도달 어려움), (b) `aggregateClicksByLink`/`aggregateTopReferrers`의 동점 정렬이 삽입 순서에 의존해 비결정적, (c) 서로 다른 삭제 링크가 "삭제된 링크" 막대 여러 개로 각각 표시됨(합산 안 됨).
+  - 과거 반복 실수 패턴(RLS grant 누락/fetch catch 누락/API 인증 경로 누락/S2 클릭 필터) **전부 재발 없음** 확인됨.
+
+### 3-G. 남은 개발 슬라이스 ([docs/TODO.md](docs/TODO.md))
+**S0~S7 전체 개발 슬라이스 완료.**
+- 관리자 UI는 본 비비드 블루 디자인 시스템을 상속(DESIGN_SYSTEM §9), `/admin` 로그인은 `.env.local`의 `ADMIN_PASSWORD=REDACTED`로 가능. `/admin/links`·`/admin/settings`·`/admin/stats`에서 실제 CRUD·설정 편집·통계 확인 가능.
+
+**대기 중 사용자 입력**: Vercel 계정(실 배포 시점에만 필요, 로컬 개발은 이미 가능). 전체 브랜치(`feature/gobang-linktree`) 최종 통합 여부도 사용자 확인 필요.
 
 ---
 
@@ -130,6 +142,8 @@ S0·S1·S2·S3·S4·S5·S7 완료. 남은 것:
 - **`middleware.ts`가 아니라 `proxy.ts`**: Next.js 16.2.10부터 "middleware" 파일 컨벤션이 deprecated고 "proxy"로 바뀜(파일명·export 함수명 둘 다: `middleware.ts`/`export function middleware` → `proxy.ts`/`export function proxy`). `next build` 시 경고 없이 `ƒ Proxy (Middleware)`가 라우트 목록에 뜨는지로 확인 가능. 이 프로젝트의 관리자 라우트 보호 로직은 `src/proxy.ts`에 있다.
 - **`.env.local`**: Supabase URL/anon/service_role + `ADMIN_PASSWORD=REDACTED`. gitignore됨, 새 세션/계정에서는 이 파일이 없으므로 `.env.example` 참고해 재구성하거나 기존 값을 전달받아야 함.
 - **사용자 입력 URL을 `<a href>`로 렌더할 때는 항상 `src/lib/links/isSafeLinkUrl.ts` 같은 스킴 화이트리스트 검증을 거칠 것**: `javascript:`/`data:` 등은 React가 자동으로 막아주지 않는다(escape는 텍스트 콘텐츠에만 적용됨). S5(사이트 설정)에서 소셜 URL 등 새 입력 필드를 추가할 때도 동일 패턴 적용 필요.
+- **ESLint `react-hooks/error-boundaries` 룰**: Server Component에서 `try { ... return <JSX/> ... } catch { return <JSX/> }` 형태로 JSX 반환을 try/catch 블록 안에 두면 lint 에러가 난다(React가 JSX를 즉시 렌더링하지 않아 try/catch가 렌더 에러를 못 잡는다는 규칙, `eslint-config-next`의 `core-web-vitals`에 포함). S6에서 발견됨 — 해결 패턴: try 블록 안에서는 데이터 fetch/에러 캡처만 하고 결과를 지역 변수에 담은 뒤, JSX 반환은 try/catch 블록 밖에서 조건 분기로 처리할 것(`src/app/admin/(protected)/stats/page.tsx` 참고).
+- **`react`의 list `key`는 실제로 유일한 값을 써야 한다**: `aggregateClicksByLink`처럼 삭제된 항목을 공통 폴백 라벨("삭제된 링크")로 표시하는 집계에서는 라벨이 중복될 수 있어 `key={label}`이 위험하다 — `key={`${label}-${index}`}` 같이 인덱스를 섞을 것(S6 `BarChart.tsx`에서 발견, whole-slice 리뷰 Important).
 
 ---
 
