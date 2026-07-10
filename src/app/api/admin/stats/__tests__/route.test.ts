@@ -75,7 +75,7 @@ describe("GET /api/admin/stats", () => {
     const body = await res.json();
 
     expect(res.status).toBe(400);
-    expect(typeof body.error).toBe("string");
+    expect(body.error).toBe("from, to 쿼리 파라미터는 필수입니다");
     expect(getStatsSummary).not.toHaveBeenCalled();
   });
 
@@ -90,7 +90,7 @@ describe("GET /api/admin/stats", () => {
     const body = await res.json();
 
     expect(res.status).toBe(400);
-    expect(typeof body.error).toBe("string");
+    expect(body.error).toBe("from, to 쿼리 파라미터는 필수입니다");
     expect(getStatsSummary).not.toHaveBeenCalled();
   });
 
@@ -105,7 +105,7 @@ describe("GET /api/admin/stats", () => {
     const body = await res.json();
 
     expect(res.status).toBe(400);
-    expect(typeof body.error).toBe("string");
+    expect(body.error).toBe("from, to 쿼리 파라미터는 필수입니다");
     expect(getStatsSummary).not.toHaveBeenCalled();
   });
 
@@ -122,7 +122,7 @@ describe("GET /api/admin/stats", () => {
     const body = await res.json();
 
     expect(res.status).toBe(400);
-    expect(typeof body.error).toBe("string");
+    expect(body.error).toBe("from, to는 올바른 날짜 형식(ISO 8601)이어야 합니다");
     expect(getStatsSummary).not.toHaveBeenCalled();
   });
 
@@ -139,7 +139,7 @@ describe("GET /api/admin/stats", () => {
     const body = await res.json();
 
     expect(res.status).toBe(400);
-    expect(typeof body.error).toBe("string");
+    expect(body.error).toBe("from, to는 올바른 날짜 형식(ISO 8601)이어야 합니다");
     expect(getStatsSummary).not.toHaveBeenCalled();
   });
 
@@ -156,7 +156,7 @@ describe("GET /api/admin/stats", () => {
     const body = await res.json();
 
     expect(res.status).toBe(400);
-    expect(typeof body.error).toBe("string");
+    expect(body.error).toBe("from은 to보다 이후일 수 없습니다");
     expect(getStatsSummary).not.toHaveBeenCalled();
   });
 });
