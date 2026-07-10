@@ -21,6 +21,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             >
               사이트 설정
             </Link>
+            <Link
+              href="/admin/stats"
+              className="focus-glow rounded-[var(--r-sm)] px-2 py-1 text-[13.5px] font-semibold text-[var(--color-ink-2)] hover:text-[var(--color-primary)]"
+            >
+              통계
+            </Link>
           </nav>
         </div>
         <LogoutButton />
