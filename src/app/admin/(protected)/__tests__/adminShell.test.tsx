@@ -53,7 +53,7 @@ describe("AdminLayout", () => {
         <p>본문 콘텐츠</p>
       </AdminLayout>,
     );
-    expect(screen.getByText("고방 관리자")).toBeInTheDocument();
+    expect(screen.getByText("고방 링크트리 관리자")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "링크 관리" })).toHaveAttribute(
       "href",
       "/admin/links",
