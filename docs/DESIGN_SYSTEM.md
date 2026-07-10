@@ -27,7 +27,7 @@
 | Border | `#E5EBF7` | 카드 얇은 보더(1px) |
 | Border Strong | `#D3DCF0` | 입력·강한 구분선(1.5px) |
 | On Primary | `#FFFFFF` | 블루 위 텍스트(대비 5.9:1 ✅) |
-| Danger | `#E5484D` / Good `#1FB07A` | 상태 |
+| Danger | `#CA2B30` / Good `#1FB07A` | 상태 |
 
 - **대비 검증(WCAG AA)**: 화이트 on `#1B4DFF` = 5.9:1 ✅ / ink on 화이트 = 15+ ✅ / ink-2 on 화이트 = 9.4:1 ✅ / muted on 화이트 = 3.46:1 ⚠️(대형·비필수만).
 - **골드/틸/라임/크림 사용 금지.** 배지 강조는 골드 대신 blue-100(`#DCE7FF`) 틴트 사용.

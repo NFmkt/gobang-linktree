@@ -29,7 +29,7 @@
   --color-on-primary: #ffffff; /* 블루 위 텍스트 (대비 5.9:1) */
 
   /* ── 상태 (관리자 대시보드 S9에서 소비 — 공개 페이지엔 아직 미사용) ── */
-  --color-danger: #e5484d;
+  --color-danger: #ca2b30;
   --color-good: #1fb07a;
 
   /* ── 라운딩 ── */

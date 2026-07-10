@@ -110,14 +110,14 @@ export function LinkForm(props: LinkFormProps) {
         <button
           type="submit"
           disabled={submitting}
-          className="focus-glow flex-1 rounded-[var(--r-sm)] bg-[var(--color-primary)] py-2 text-[13.5px] font-bold text-[var(--color-on-primary)] disabled:opacity-50"
+          className="focus-glow min-h-11 flex-1 rounded-[var(--r-sm)] bg-[var(--color-primary)] py-2 text-[13.5px] font-bold text-[var(--color-on-primary)] disabled:opacity-50"
         >
           {submitting ? "저장 중..." : "저장"}
         </button>
         <button
           type="button"
           onClick={props.onCancel}
-          className="focus-glow flex-1 rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-border-strong)] py-2 text-[13.5px] font-semibold text-[var(--color-ink-2)]"
+          className="focus-glow min-h-11 flex-1 rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-border-strong)] py-2 text-[13.5px] font-semibold text-[var(--color-ink-2)]"
         >
           취소
         </button>

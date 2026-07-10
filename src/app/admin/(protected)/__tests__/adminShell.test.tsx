@@ -6,6 +6,7 @@ const refreshMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock, refresh: refreshMock }),
+  usePathname: () => "/admin/links",
 }));
 
 describe("LogoutButton", () => {

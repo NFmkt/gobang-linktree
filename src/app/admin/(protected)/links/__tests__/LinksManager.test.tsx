@@ -8,6 +8,12 @@ const links: Link[] = [
   { id: "b", title: "B 링크", url: "https://b.test", icon: "feed", order: 2, active: false },
 ];
 
+const threeLinks: Link[] = [
+  { id: "a", title: "A 링크", url: "https://a.test", icon: "home", order: 1, active: true },
+  { id: "b", title: "B 링크", url: "https://b.test", icon: "feed", order: 2, active: false },
+  { id: "c", title: "C 링크", url: "https://c.test", icon: "feed", order: 3, active: false },
+];
+
 describe("LinksManager", () => {
   beforeEach(() => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
@@ -24,7 +30,12 @@ describe("LinksManager", () => {
     expect(screen.getByText("B 링크")).toBeInTheDocument();
   });
 
-  it("노출 체크박스를 토글하면 PATCH 후 목록을 다시 불러온다", async () => {
+  it("노출 토글에 접근성 이름 '노출'이 노출된다", () => {
+    render(<LinksManager initialLinks={links} />);
+    expect(screen.getAllByRole("switch", { name: "노출" })).toHaveLength(links.length);
+  });
+
+  it("노출 토글을 클릭하면 PATCH 후 목록을 다시 불러온다", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(new Response(null, { status: 200 }))
@@ -37,8 +48,8 @@ describe("LinksManager", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<LinksManager initialLinks={links} />);
-    const checkboxes = screen.getAllByRole("checkbox");
-    fireEvent.click(checkboxes[0]);
+    const toggles = screen.getAllByRole("switch");
+    fireEvent.click(toggles[0]);
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith("/api/admin/links/a", {
@@ -93,7 +104,7 @@ describe("LinksManager", () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
 
     render(<LinksManager initialLinks={links} />);
-    fireEvent.click(screen.getAllByRole("checkbox")[0]);
+    fireEvent.click(screen.getAllByRole("switch")[0]);
 
     await waitFor(() => {
       expect(
@@ -107,7 +118,7 @@ describe("LinksManager", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<LinksManager initialLinks={links} />);
-    fireEvent.click(screen.getAllByRole("checkbox")[0]);
+    fireEvent.click(screen.getAllByRole("switch")[0]);
 
     await waitFor(() => {
       expect(screen.getByText("노출 상태 변경에 실패했습니다.")).toBeInTheDocument();
@@ -148,5 +159,74 @@ describe("LinksManager", () => {
         body: JSON.stringify({ order: ["b", "a"] }),
       });
     });
+  });
+
+  it("각 링크 행에 위로 이동/아래로 이동 버튼이 접근성 이름과 함께 노출된다", () => {
+    render(<LinksManager initialLinks={threeLinks} />);
+    expect(screen.getAllByRole("button", { name: "위로 이동" })).toHaveLength(threeLinks.length);
+    expect(screen.getAllByRole("button", { name: "아래로 이동" })).toHaveLength(threeLinks.length);
+  });
+
+  it("첫 번째 항목의 위로 이동 버튼은 비활성화된다", () => {
+    render(<LinksManager initialLinks={threeLinks} />);
+    const upButtons = screen.getAllByRole("button", { name: "위로 이동" });
+    expect(upButtons[0]).toBeDisabled();
+    expect(upButtons[1]).not.toBeDisabled();
+    expect(upButtons[2]).not.toBeDisabled();
+  });
+
+  it("마지막 항목의 아래로 이동 버튼은 비활성화된다", () => {
+    render(<LinksManager initialLinks={threeLinks} />);
+    const downButtons = screen.getAllByRole("button", { name: "아래로 이동" });
+    expect(downButtons[0]).not.toBeDisabled();
+    expect(downButtons[1]).not.toBeDisabled();
+    expect(downButtons[2]).toBeDisabled();
+  });
+
+  it("아래로 이동 버튼 클릭 시 인접 항목과 순서를 바꾸고 reorder API를 호출한다", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(null, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<LinksManager initialLinks={threeLinks} />);
+    const downButtons = screen.getAllByRole("button", { name: "아래로 이동" });
+    fireEvent.click(downButtons[0]); // "A 링크"를 아래로
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/admin/links/reorder", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order: ["b", "a", "c"] }),
+      });
+    });
+  });
+
+  it("위로 이동 버튼 클릭 시 인접 항목과 순서를 바꾸고 reorder API를 호출한다", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(null, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<LinksManager initialLinks={threeLinks} />);
+    const upButtons = screen.getAllByRole("button", { name: "위로 이동" });
+    fireEvent.click(upButtons[2]); // "C 링크"를 위로
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/admin/links/reorder", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order: ["a", "c", "b"] }),
+      });
+    });
+  });
+
+  it("비활성화된 위로/아래로 이동 버튼을 클릭해도 reorder API를 호출하지 않는다", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<LinksManager initialLinks={threeLinks} />);
+    const upButtons = screen.getAllByRole("button", { name: "위로 이동" });
+    const downButtons = screen.getAllByRole("button", { name: "아래로 이동" });
+    fireEvent.click(upButtons[0]);
+    fireEvent.click(downButtons[2]);
+
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

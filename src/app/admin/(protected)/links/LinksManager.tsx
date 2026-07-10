@@ -3,6 +3,7 @@
 import { useState, type DragEvent } from "react";
 import type { Link } from "@/lib/links/types";
 import { LinkIcon } from "@/components/icons/LinkIcon";
+import { ToggleSwitch } from "@/components/admin/ToggleSwitch";
 import { reorderLinks } from "@/lib/admin/reorderLinks";
 import { LinkForm } from "./LinkForm";
 
@@ -77,10 +78,8 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
     event.preventDefault();
   }
 
-  async function handleDrop(targetId: string) {
-    if (!draggedId) return;
-    const reordered = reorderLinks(links, draggedId, targetId);
-    setDraggedId(null);
+  async function performReorder(sourceId: string, targetId: string) {
+    const reordered = reorderLinks(links, sourceId, targetId);
     setLinks(reordered);
     try {
       const res = await fetch("/api/admin/links/reorder", {
@@ -96,6 +95,25 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
     }
   }
 
+  async function handleDrop(targetId: string) {
+    if (!draggedId) return;
+    const sourceId = draggedId;
+    setDraggedId(null);
+    await performReorder(sourceId, targetId);
+  }
+
+  function handleMoveUp(id: string) {
+    const index = links.findIndex((link) => link.id === id);
+    if (index <= 0) return;
+    void performReorder(id, links[index - 1].id);
+  }
+
+  function handleMoveDown(id: string) {
+    const index = links.findIndex((link) => link.id === id);
+    if (index === -1 || index >= links.length - 1) return;
+    void performReorder(id, links[index + 1].id);
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -103,7 +121,7 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
         <button
           type="button"
           onClick={() => setIsCreating(true)}
-          className="focus-glow rounded-[var(--r-sm)] bg-[var(--color-primary)] px-3 py-1.5 text-[13.5px] font-bold text-[var(--color-on-primary)]"
+          className="focus-glow min-h-11 rounded-[var(--r-sm)] bg-[var(--color-primary)] px-3 py-1.5 text-[13.5px] font-bold text-[var(--color-on-primary)]"
         >
           + 링크 추가
         </button>
@@ -130,7 +148,7 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
       ) : null}
 
       <ul className="flex flex-col gap-2">
-        {links.map((link) => (
+        {links.map((link, index) => (
           <li
             key={link.id}
             draggable
@@ -139,6 +157,26 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
             onDrop={() => void handleDrop(link.id)}
             className="flex items-center gap-3 rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-[var(--sh-sm)]"
           >
+            <span className="flex shrink-0 flex-col">
+              <button
+                type="button"
+                onClick={() => handleMoveUp(link.id)}
+                disabled={index === 0}
+                aria-label="위로 이동"
+                className="focus-glow flex min-h-11 min-w-11 items-center justify-center rounded-[var(--r-sm)] text-[13px] text-[var(--color-ink-2)] hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-[var(--color-ink-2)]"
+              >
+                ▲
+              </button>
+              <button
+                type="button"
+                onClick={() => handleMoveDown(link.id)}
+                disabled={index === links.length - 1}
+                aria-label="아래로 이동"
+                className="focus-glow flex min-h-11 min-w-11 items-center justify-center rounded-[var(--r-sm)] text-[13px] text-[var(--color-ink-2)] hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-[var(--color-ink-2)]"
+              >
+                ▼
+              </button>
+            </span>
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--r-sm)] bg-[var(--color-blue-50)]">
               <LinkIcon iconKey={link.icon} className="h-5 w-5" />
             </span>
@@ -148,25 +186,25 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
               </span>
               <span className="truncate text-[12.5px] text-[var(--color-ink-2)]">{link.url}</span>
             </span>
-            <label className="flex items-center gap-1.5 text-[12.5px] text-[var(--color-ink-2)]">
-              <input
-                type="checkbox"
+            <span className="flex items-center gap-1.5 text-[12.5px] text-[var(--color-ink-2)]">
+              <ToggleSwitch
                 checked={link.active}
                 onChange={() => void handleToggleActive(link)}
+                aria-label="노출"
               />
               노출
-            </label>
+            </span>
             <button
               type="button"
               onClick={() => setEditingLink(link)}
-              className="focus-glow rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-border-strong)] px-2.5 py-1 text-[12.5px] font-semibold text-[var(--color-ink-2)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+              className="focus-glow min-h-11 rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-border-strong)] px-2.5 py-1 text-[12.5px] font-semibold text-[var(--color-ink-2)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
             >
               수정
             </button>
             <button
               type="button"
               onClick={() => void handleDelete(link)}
-              className="focus-glow rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-border-strong)] px-2.5 py-1 text-[12.5px] font-semibold text-[var(--color-danger)]"
+              className="focus-glow min-h-11 rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-border-strong)] px-2.5 py-1 text-[12.5px] font-semibold text-[var(--color-danger)]"
             >
               삭제
             </button>
