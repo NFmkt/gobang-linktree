@@ -24,7 +24,7 @@ export function AdminNav() {
           <Link
             key={item.href}
             href={item.href}
-            className={`focus-glow rounded-[var(--r-sm)] px-2 py-1 text-[13.5px] ${
+            className={`focus-glow flex min-h-11 items-center rounded-[var(--r-sm)] px-3 text-[13.5px] ${
               active
                 ? "font-bold text-[var(--color-primary)]"
                 : "font-semibold text-[var(--color-ink-2)] hover:text-[var(--color-primary)]"
