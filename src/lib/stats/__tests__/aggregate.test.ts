@@ -4,6 +4,9 @@ import {
   aggregateClicksByLink,
   aggregateDailyTrend,
   aggregateTopReferrers,
+  aggregateTopCampaigns,
+  aggregateWeekdayDistribution,
+  aggregatePageviewsWeekOverWeek,
   buildStatsSummary,
 } from "../aggregate";
 import type { EventRow, LinkTitleRow } from "../types";
@@ -73,6 +76,28 @@ describe("aggregateClicksByLink", () => {
 
   it("빈 이벤트 배열이면 빈 배열을 반환한다", () => {
     expect(aggregateClicksByLink([], links)).toEqual([]);
+  });
+
+  it("서로 다른 삭제된 링크 2개 이상은 '삭제된 링크' 한 행으로 합산한다", () => {
+    const events = [
+      makeEvent({ type: "click", link_id: "deleted-a" }),
+      makeEvent({ type: "click", link_id: "deleted-b" }),
+      makeEvent({ type: "click", link_id: "deleted-b" }),
+    ];
+    expect(aggregateClicksByLink(events, links)).toEqual([
+      { linkId: "__deleted__", title: "삭제된 링크", count: 3 },
+    ]);
+  });
+
+  it("count가 동일하면 title 가나다순으로 정렬해 순서를 안정적으로 만든다", () => {
+    const events = [
+      makeEvent({ type: "click", link_id: "blog" }),
+      makeEvent({ type: "click", link_id: "home" }),
+    ];
+    expect(aggregateClicksByLink(events, links)).toEqual([
+      { linkId: "blog", title: "블로그", count: 1 },
+      { linkId: "home", title: "홈", count: 1 },
+    ]);
   });
 });
 
@@ -146,6 +171,116 @@ describe("aggregateTopReferrers", () => {
       { source: "b", count: 1 },
     ]);
   });
+
+  it("count가 동일하면 source 가나다순으로 정렬해 순서를 안정적으로 만든다", () => {
+    const events = [
+      makeEvent({ type: "pageview", utm_source: "z-소스" }),
+      makeEvent({ type: "pageview", utm_source: "a-소스" }),
+    ];
+    expect(aggregateTopReferrers(events)).toEqual([
+      { source: "a-소스", count: 1 },
+      { source: "z-소스", count: 1 },
+    ]);
+  });
+});
+
+describe("aggregateTopCampaigns", () => {
+  it("utm_campaign이 있는 pageview만 집계한다", () => {
+    const events = [
+      makeEvent({ type: "pageview", utm_campaign: "summer-sale" }),
+      makeEvent({ type: "pageview", utm_campaign: "summer-sale" }),
+      makeEvent({ type: "pageview", utm_campaign: null }),
+      makeEvent({ type: "click", link_id: "home", utm_campaign: "summer-sale" }),
+    ];
+    expect(aggregateTopCampaigns(events)).toEqual([{ campaign: "summer-sale", count: 2 }]);
+  });
+
+  it("캠페인이 하나도 없으면 빈 배열을 반환한다", () => {
+    expect(aggregateTopCampaigns([makeEvent({ type: "pageview" })])).toEqual([]);
+  });
+
+  it("count 내림차순 정렬 후 limit개만 반환한다", () => {
+    const events = [
+      makeEvent({ type: "pageview", utm_campaign: "a" }),
+      makeEvent({ type: "pageview", utm_campaign: "a" }),
+      makeEvent({ type: "pageview", utm_campaign: "b" }),
+      makeEvent({ type: "pageview", utm_campaign: "c" }),
+    ];
+    expect(aggregateTopCampaigns(events, 2)).toEqual([
+      { campaign: "a", count: 2 },
+      { campaign: "b", count: 1 },
+    ]);
+  });
+});
+
+describe("aggregateWeekdayDistribution", () => {
+  it("pageview를 요일별로 집계하고 월~일 순서로 7개를 반환한다", () => {
+    const events = [
+      // 2026-07-06은 월요일(UTC)
+      makeEvent({ type: "pageview", created_at: "2026-07-06T10:00:00.000Z" }),
+      makeEvent({ type: "pageview", created_at: "2026-07-06T11:00:00.000Z" }),
+      // 2026-07-12는 일요일(UTC)
+      makeEvent({ type: "pageview", created_at: "2026-07-12T10:00:00.000Z" }),
+      makeEvent({ type: "click", link_id: "home", created_at: "2026-07-06T10:00:00.000Z" }),
+    ];
+    const result = aggregateWeekdayDistribution(events);
+    expect(result).toEqual([
+      { weekday: "월", count: 2 },
+      { weekday: "화", count: 0 },
+      { weekday: "수", count: 0 },
+      { weekday: "목", count: 0 },
+      { weekday: "금", count: 0 },
+      { weekday: "토", count: 0 },
+      { weekday: "일", count: 1 },
+    ]);
+  });
+
+  it("이벤트가 없으면 전부 count 0인 7개 포인트를 반환한다", () => {
+    const result = aggregateWeekdayDistribution([]);
+    expect(result).toHaveLength(7);
+    expect(result.every((point) => point.count === 0)).toBe(true);
+  });
+});
+
+describe("aggregatePageviewsWeekOverWeek", () => {
+  const now = new Date("2026-07-10T12:00:00.000Z");
+
+  it("최근 7일과 그 이전 7일의 pageview 수·증감률을 계산한다", () => {
+    const events = [
+      // 최근 7일 (7/3 12:00 ~ 7/10 12:00): 3건
+      makeEvent({ type: "pageview", created_at: "2026-07-09T00:00:00.000Z" }),
+      makeEvent({ type: "pageview", created_at: "2026-07-09T00:00:00.000Z" }),
+      makeEvent({ type: "pageview", created_at: "2026-07-05T00:00:00.000Z" }),
+      // 이전 7일 (6/26 12:00 ~ 7/3 12:00): 2건
+      makeEvent({ type: "pageview", created_at: "2026-07-01T00:00:00.000Z" }),
+      makeEvent({ type: "pageview", created_at: "2026-06-28T00:00:00.000Z" }),
+      // 범위 밖
+      makeEvent({ type: "pageview", created_at: "2026-06-01T00:00:00.000Z" }),
+      makeEvent({ type: "click", link_id: "home", created_at: "2026-07-09T00:00:00.000Z" }),
+    ];
+    expect(aggregatePageviewsWeekOverWeek(events, now)).toEqual({
+      current: 3,
+      previous: 2,
+      changePercent: 50,
+    });
+  });
+
+  it("이전 7일 데이터가 0건이면 changePercent는 null이다", () => {
+    const events = [makeEvent({ type: "pageview", created_at: "2026-07-09T00:00:00.000Z" })];
+    expect(aggregatePageviewsWeekOverWeek(events, now)).toEqual({
+      current: 1,
+      previous: 0,
+      changePercent: null,
+    });
+  });
+
+  it("이벤트가 없으면 0/0/null을 반환한다", () => {
+    expect(aggregatePageviewsWeekOverWeek([], now)).toEqual({
+      current: 0,
+      previous: 0,
+      changePercent: null,
+    });
+  });
 });
 
 describe("buildStatsSummary", () => {
@@ -165,5 +300,24 @@ describe("buildStatsSummary", () => {
     expect(summary.dailyTrend30).toHaveLength(30);
     expect(summary.dailyTrend7[6]).toEqual({ date: "2026-07-10", count: 1 });
     expect(summary.topReferrers).toEqual([{ source: "직접 방문", count: 1 }]);
+    expect(summary.topCampaigns).toEqual([]);
+    expect(summary.weekdayDistribution).toHaveLength(7);
+    expect(summary.clickThroughRate).toBe(100);
+    expect(summary.pageviewsWeekOverWeek).toEqual({ current: 1, previous: 0, changePercent: null });
+  });
+
+  it("totalPageviews가 0이면 clickThroughRate는 null이다", () => {
+    const summary = buildStatsSummary([], []);
+    expect(summary.totalPageviews).toBe(0);
+    expect(summary.clickThroughRate).toBeNull();
+  });
+
+  it("exactCounts를 넘기면 총계는 exactCounts를 우선 사용한다 (limit 캡 우회)", () => {
+    const now = new Date("2026-07-10T12:00:00.000Z");
+    const events = [makeEvent({ type: "pageview", created_at: "2026-07-10T01:00:00.000Z" })];
+    const summary = buildStatsSummary(events, [], now, { pageviews: 12000, clicks: 340 });
+    expect(summary.totalPageviews).toBe(12000);
+    expect(summary.totalClicks).toBe(340);
+    expect(summary.clickThroughRate).toBeCloseTo(2.8, 1);
   });
 });

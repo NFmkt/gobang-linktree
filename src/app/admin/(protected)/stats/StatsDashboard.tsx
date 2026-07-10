@@ -10,6 +10,24 @@ type StatsDashboardProps = {
   summary: StatsSummary;
 };
 
+/**
+ * 전주 대비 증감 배지. 색상만으로 증감을 전달하지 않고 화살표+텍스트를 함께 표시한다.
+ * previous가 0이라 비교 불가(changePercent === null)면 아무것도 표시하지 않는다.
+ */
+function WeekOverWeekBadge({ changePercent }: { changePercent: number | null }) {
+  if (changePercent === null) return null;
+  const isUp = changePercent >= 0;
+  return (
+    <span
+      className={`text-[12.5px] font-bold tabular-nums ${
+        isUp ? "text-[var(--color-primary)]" : "text-[var(--color-danger)]"
+      }`}
+    >
+      {isUp ? "▲" : "▼"} {Math.abs(changePercent)}%
+    </span>
+  );
+}
+
 export function StatsDashboard({ summary }: StatsDashboardProps) {
   const router = useRouter();
   const [trendRange, setTrendRange] = useState<7 | 30>(7);
@@ -60,17 +78,26 @@ export function StatsDashboard({ summary }: StatsDashboardProps) {
         </p>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
               <p className="text-[12.5px] font-semibold text-[var(--color-ink-2)]">총 방문수</p>
-              <p className="text-[24px] font-extrabold text-[var(--color-ink)]">
-                {summary.totalPageviews}
-              </p>
+              <div className="flex items-baseline gap-1.5">
+                <p className="text-[24px] font-extrabold tabular-nums text-[var(--color-ink)]">
+                  {summary.totalPageviews}
+                </p>
+                <WeekOverWeekBadge changePercent={summary.pageviewsWeekOverWeek.changePercent} />
+              </div>
             </div>
             <div className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
               <p className="text-[12.5px] font-semibold text-[var(--color-ink-2)]">총 클릭수</p>
-              <p className="text-[24px] font-extrabold text-[var(--color-ink)]">
+              <p className="text-[24px] font-extrabold tabular-nums text-[var(--color-ink)]">
                 {summary.totalClicks}
+              </p>
+            </div>
+            <div className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
+              <p className="text-[12.5px] font-semibold text-[var(--color-ink-2)]">클릭률</p>
+              <p className="text-[24px] font-extrabold tabular-nums text-[var(--color-ink)]">
+                {summary.clickThroughRate === null ? "-" : `${summary.clickThroughRate}%`}
               </p>
             </div>
           </div>
@@ -115,10 +142,29 @@ export function StatsDashboard({ summary }: StatsDashboardProps) {
           </section>
 
           <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
+            <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">요일별 방문 분포</h2>
+            <BarChart
+              items={summary.weekdayDistribution.map((item) => ({
+                label: item.weekday,
+                value: item.count,
+              }))}
+              emptyMessage="아직 방문 기록이 없습니다."
+            />
+          </section>
+
+          <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
             <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">유입출처 TOP</h2>
             <BarChart
               items={summary.topReferrers.map((item) => ({ label: item.source, value: item.count }))}
               emptyMessage="아직 유입 기록이 없습니다."
+            />
+          </section>
+
+          <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
+            <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">캠페인별 유입 TOP</h2>
+            <BarChart
+              items={summary.topCampaigns.map((item) => ({ label: item.campaign, value: item.count }))}
+              emptyMessage="아직 캠페인 유입 기록이 없습니다."
             />
           </section>
         </>
