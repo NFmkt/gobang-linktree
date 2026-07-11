@@ -1,14 +1,16 @@
 import { getStatsSummary } from "@/lib/stats/getStatsSummary";
+import { computePresetRange } from "@/lib/stats/dateRangePresets";
 import { StatsDashboard } from "./StatsDashboard";
 
-/** 7일(오늘 포함) 밀리초 길이. dailyTrend7이 today-6..today를 보여주던 과거 기본값과 동일한 창을 유지한다. */
-const DEFAULT_RANGE_MS = 6 * 24 * 60 * 60 * 1000;
+/** 페이지 최초 진입 시 기본 선택 프리셋. B3 이후에도 "최근 7일" 기본값을 유지한다. */
+const INITIAL_PRESET = "7d" as const;
 
 export default async function AdminStatsPage() {
-  // TODO(B3): 프리셋/커스텀 날짜 피커 UI에서 from~to를 받아오도록 교체 예정.
-  // 지금은 기존 페이지 동작(최근 7일)을 그대로 유지하기 위한 최소 배선.
-  const to = new Date();
-  const from = new Date(to.getTime() - DEFAULT_RANGE_MS);
+  // 서버에서 초기 프리셋("7일")의 from~to를 직접 계산해 getStatsSummary를 바로 호출한다
+  // (HTTP 왕복 없이 SSR로 초기 데이터를 렌더 — 불필요한 최초 로딩 스피너를 피하기 위해 유지).
+  // StatsDashboard에는 이 초기 from/to·프리셋도 함께 넘겨, 이후 통계 초기화 후 재조회 시
+  // 서버 기본값이 아니라 사용자가 보고 있던 범위로 되돌아가지 않도록 한다.
+  const { from, to } = computePresetRange(INITIAL_PRESET, new Date());
 
   let summary;
   let errorMessage: string | null = null;
@@ -26,5 +28,12 @@ export default async function AdminStatsPage() {
     );
   }
 
-  return <StatsDashboard summary={summary} />;
+  return (
+    <StatsDashboard
+      summary={summary}
+      initialPreset={INITIAL_PRESET}
+      initialFrom={from.toISOString()}
+      initialTo={to.toISOString()}
+    />
+  );
 }
