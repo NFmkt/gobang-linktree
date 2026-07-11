@@ -57,6 +57,17 @@ describe("LineChart", () => {
     expect(screen.getByText(/최근 30/)).toBeInTheDocument();
   });
 
+  it("포인트가 60개를 초과하면(예: '전체' 프리셋) circle을 전혀 렌더하지 않고 폴리라인과 캡션만 남긴다", () => {
+    const points = Array.from({ length: 400 }, (_, i) => ({
+      date: `point-${i}`,
+      count: i === 200 ? 99 : i % 5,
+    }));
+    render(<LineChart points={points} emptyMessage="데이터가 없습니다." />);
+    expect(document.querySelectorAll("circle")).toHaveLength(0);
+    expect(document.querySelector("polyline")).toBeInTheDocument();
+    expect(screen.getByText(/최고 99/)).toBeInTheDocument();
+  });
+
   it("각 포인트의 circle에 날짜·값을 담은 title(툴팁)이 있다", () => {
     render(
       <LineChart
