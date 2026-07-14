@@ -56,7 +56,7 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex max-w-[480px] flex-col gap-3 rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]"
+      className="mx-auto flex max-w-[480px] flex-col gap-3 rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]"
     >
       <h1 className="text-[18px] font-extrabold text-[var(--color-ink)]">사이트 설정</h1>
 
