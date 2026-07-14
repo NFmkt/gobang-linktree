@@ -23,7 +23,7 @@ describe("AdminLoginPage", () => {
     const AdminLoginPage = (await import("../page")).default;
     render(<AdminLoginPage />);
 
-    fireEvent.change(screen.getByPlaceholderText("비밀번호"), { target: { value: "REDACTED" } });
+    fireEvent.change(screen.getByPlaceholderText("비밀번호"), { target: { value: "test-password" } });
     fireEvent.click(screen.getByRole("button", { name: "로그인" }));
 
     await waitFor(() => {
@@ -32,7 +32,7 @@ describe("AdminLoginPage", () => {
     expect(fetch).toHaveBeenCalledWith("/api/admin/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: "REDACTED" }),
+      body: JSON.stringify({ password: "test-password" }),
     });
     expect(refreshMock).toHaveBeenCalled();
   });
@@ -56,7 +56,7 @@ describe("AdminLoginPage", () => {
     const AdminLoginPage = (await import("../page")).default;
     render(<AdminLoginPage />);
 
-    fireEvent.change(screen.getByPlaceholderText("비밀번호"), { target: { value: "REDACTED" } });
+    fireEvent.change(screen.getByPlaceholderText("비밀번호"), { target: { value: "test-password" } });
     fireEvent.click(screen.getByRole("button", { name: "로그인" }));
 
     await waitFor(() => {

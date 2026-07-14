@@ -695,7 +695,7 @@ describe("AdminLoginPage", () => {
     const AdminLoginPage = (await import("../page")).default;
     render(<AdminLoginPage />);
 
-    fireEvent.change(screen.getByPlaceholderText("비밀번호"), { target: { value: "REDACTED" } });
+    fireEvent.change(screen.getByPlaceholderText("비밀번호"), { target: { value: "test-password" } });
     fireEvent.click(screen.getByRole("button", { name: "로그인" }));
 
     await waitFor(() => {
@@ -704,7 +704,7 @@ describe("AdminLoginPage", () => {
     expect(fetch).toHaveBeenCalledWith("/api/admin/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: "REDACTED" }),
+      body: JSON.stringify({ password: "test-password" }),
     });
     expect(refreshMock).toHaveBeenCalled();
   });
@@ -817,7 +817,7 @@ npx next build
 전부 clean 확인. 추가로 컨트롤러(사람)가 실제 dev 서버(3939)에서 라이브 확인:
 1. `curl -i http://localhost:3939/admin` → 307 리다이렉트로 `/admin/login`인지 확인
 2. `curl -i -X POST http://localhost:3939/api/admin/login -H "Content-Type: application/json" -d '{"password":"wrong"}'` → 401 확인
-3. `curl -i -X POST http://localhost:3939/api/admin/login -H "Content-Type: application/json" -d '{"password":"REDACTED"}'` → 200 + `Set-Cookie: admin_session=...` 확인
+3. `curl -i -X POST http://localhost:3939/api/admin/login -H "Content-Type: application/json" -d '{"password":"test-password"}'` → 200 + `Set-Cookie: admin_session=...` 확인
 4. 받은 쿠키로 `curl -i http://localhost:3939/admin --cookie "admin_session=<값>"` → 200 확인
 
 - [ ] **Step 6: 커밋**
