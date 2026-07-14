@@ -108,6 +108,28 @@ body {
   }
 }
 
+/* 관리자 리스트 행 아코디언 패널 진입 애니메이션 (링크 관리 등). */
+@keyframes accordion-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.accordion-panel {
+  animation: accordion-in 0.18s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .accordion-panel {
+    animation: none;
+  }
+}
+
 /* focus-visible 블루 글로우 링 — 인터랙티브 요소 공통(LinkButton/AffiliateButton/SocialRow). */
 .focus-glow:focus-visible {
   outline: none;

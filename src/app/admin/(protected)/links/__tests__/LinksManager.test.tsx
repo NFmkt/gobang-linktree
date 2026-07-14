@@ -229,4 +229,77 @@ describe("LinksManager", () => {
 
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  describe("행 아코디언", () => {
+    it("기본 상태에서는 어떤 행의 수정 폼도 보이지 않는다", () => {
+      render(<LinksManager initialLinks={links} />);
+      expect(screen.queryByPlaceholderText("제목")).not.toBeInTheDocument();
+    });
+
+    it("수정 버튼은 접힌 상태에서 aria-expanded=false다", () => {
+      render(<LinksManager initialLinks={links} />);
+      const editButtons = screen.getAllByRole("button", { name: "수정" });
+      expect(editButtons[0]).toHaveAttribute("aria-expanded", "false");
+    });
+
+    it("수정 버튼을 클릭하면 해당 행에 인라인으로 폼이 펼쳐지고 aria-expanded=true가 된다", () => {
+      render(<LinksManager initialLinks={links} />);
+      const editButton = screen.getAllByRole("button", { name: "수정" })[0];
+      fireEvent.click(editButton);
+
+      expect(screen.getByPlaceholderText("제목")).toHaveValue("A 링크");
+      expect(screen.getByRole("button", { name: "닫기" })).toHaveAttribute(
+        "aria-expanded",
+        "true",
+      );
+    });
+
+    it("펼쳐진 행의 닫기 버튼을 다시 누르면 접혀서 폼이 사라진다", () => {
+      render(<LinksManager initialLinks={links} />);
+      fireEvent.click(screen.getAllByRole("button", { name: "수정" })[0]);
+      expect(screen.getByPlaceholderText("제목")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "닫기" }));
+      expect(screen.queryByPlaceholderText("제목")).not.toBeInTheDocument();
+    });
+
+    it("한 번에 한 행만 펼쳐진다 — 다른 행의 수정을 누르면 이전 행은 닫힌다", () => {
+      render(<LinksManager initialLinks={links} />);
+      const editButtons = screen.getAllByRole("button", { name: "수정" });
+
+      fireEvent.click(editButtons[0]);
+      expect(screen.getByPlaceholderText("제목")).toHaveValue("A 링크");
+
+      fireEvent.click(screen.getByRole("button", { name: "수정" })); // B 행의 수정
+      expect(screen.getByPlaceholderText("제목")).toHaveValue("B 링크");
+    });
+
+    it("+ 링크 추가를 누르면 펼쳐져 있던 행의 아코디언이 닫힌다", () => {
+      render(<LinksManager initialLinks={links} />);
+      fireEvent.click(screen.getAllByRole("button", { name: "수정" })[0]);
+      expect(screen.getByPlaceholderText("제목")).toHaveValue("A 링크");
+
+      fireEvent.click(screen.getByRole("button", { name: "+ 링크 추가" }));
+      expect(screen.getByPlaceholderText("제목")).toHaveValue("");
+    });
+
+    it("행이 펼쳐진 상태에서도 위로/아래로 이동, 삭제, 노출 토글은 정상 동작한다", async () => {
+      const fetchMock = vi.fn().mockResolvedValueOnce(new Response(null, { status: 200 }));
+      vi.stubGlobal("fetch", fetchMock);
+
+      render(<LinksManager initialLinks={threeLinks} />);
+      fireEvent.click(screen.getAllByRole("button", { name: "수정" })[0]);
+      expect(screen.getByPlaceholderText("제목")).toBeInTheDocument();
+
+      fireEvent.click(screen.getAllByRole("button", { name: "아래로 이동" })[0]);
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith("/api/admin/links/reorder", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order: ["b", "a", "c"] }),
+        });
+      });
+    });
+  });
 });
