@@ -3,6 +3,7 @@ import {
   countByType,
   aggregateClicksByLink,
   aggregateClicksByLinkAndMedium,
+  aggregateMediumShare,
   aggregateDailyTrend,
   aggregateTopReferrers,
   aggregateWeekdayDistribution,
@@ -254,6 +255,57 @@ describe("aggregateClicksByLinkAndMedium", () => {
 
   it("빈 이벤트 배열이면 빈 배열을 반환한다", () => {
     expect(aggregateClicksByLinkAndMedium([], links)).toEqual([]);
+  });
+});
+
+describe("aggregateMediumShare", () => {
+  it("여러 링크에 걸친 같은 utm_medium 클릭수를 합산한다", () => {
+    const breakdown = aggregateClicksByLinkAndMedium(
+      [
+        { id: "e1", type: "click", link_id: "home", referrer: null, utm_source: null, utm_medium: "social", utm_campaign: null, created_at: "2026-07-10T00:00:00.000Z" },
+        { id: "e2", type: "click", link_id: "blog", referrer: null, utm_source: null, utm_medium: "social", utm_campaign: null, created_at: "2026-07-10T00:00:00.000Z" },
+        { id: "e3", type: "click", link_id: "home", referrer: null, utm_source: null, utm_medium: "email", utm_campaign: null, created_at: "2026-07-10T00:00:00.000Z" },
+      ],
+      [
+        { id: "home", title: "홈" },
+        { id: "blog", title: "블로그" },
+      ],
+    );
+
+    expect(aggregateMediumShare(breakdown)).toEqual([
+      { medium: "social", count: 2 },
+      { medium: "email", count: 1 },
+    ]);
+  });
+
+  it("'미지정' 클릭도 다른 유입 경로와 동일하게 링크를 넘어 합산한다", () => {
+    const rows = [
+      { linkId: "home", title: "홈", total: 1, mediums: [{ medium: "미지정", count: 1 }] },
+      { linkId: "blog", title: "블로그", total: 1, mediums: [{ medium: "미지정", count: 1 }] },
+    ];
+    expect(aggregateMediumShare(rows)).toEqual([{ medium: "미지정", count: 2 }]);
+  });
+
+  it("count 내림차순, 동률이면 medium 가나다순으로 정렬한다", () => {
+    const rows = [
+      {
+        linkId: "home",
+        title: "홈",
+        total: 2,
+        mediums: [
+          { medium: "email", count: 1 },
+          { medium: "social", count: 1 },
+        ],
+      },
+    ];
+    expect(aggregateMediumShare(rows)).toEqual([
+      { medium: "email", count: 1 },
+      { medium: "social", count: 1 },
+    ]);
+  });
+
+  it("행이 없으면 빈 배열을 반환한다", () => {
+    expect(aggregateMediumShare([])).toEqual([]);
   });
 });
 

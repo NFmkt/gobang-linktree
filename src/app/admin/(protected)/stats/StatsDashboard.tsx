@@ -4,7 +4,9 @@ import { useState } from "react";
 import { BarChart } from "@/components/admin/BarChart";
 import { LineChart } from "@/components/admin/LineChart";
 import { LinkMediumTable } from "@/components/admin/LinkMediumTable";
+import { MediumDonutChart } from "@/components/admin/MediumDonutChart";
 import type { StatsSummary } from "@/lib/stats/types";
+import { aggregateMediumShare } from "@/lib/stats/aggregate";
 import { computeCustomRange, computePresetRange, type DatePreset } from "@/lib/stats/dateRangePresets";
 import { buildStatsCsv } from "@/lib/stats/buildStatsCsv";
 
@@ -90,6 +92,7 @@ export function StatsDashboard({ summary: initialSummary, initialPreset, initial
 
   const isEmpty = summary.totalPageviews === 0 && summary.totalClicks === 0;
   const trendPoints = summary.dailyTrend;
+  const mediumShare = aggregateMediumShare(summary.clicksByLinkAndMedium);
 
   async function fetchRange(from: Date, to: Date) {
     setLoading(true);
@@ -302,10 +305,13 @@ export function StatsDashboard({ summary: initialSummary, initialPreset, initial
 
           <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
             <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">링크별 유입 경로</h2>
-            <LinkMediumTable
-              rows={summary.clicksByLinkAndMedium}
-              emptyMessage="아직 클릭 기록이 없습니다."
-            />
+            <MediumDonutChart data={mediumShare} emptyMessage="아직 클릭 기록이 없습니다." />
+            <div className="mt-4">
+              <LinkMediumTable
+                rows={summary.clicksByLinkAndMedium}
+                emptyMessage="아직 클릭 기록이 없습니다."
+              />
+            </div>
           </section>
         </>
       )}

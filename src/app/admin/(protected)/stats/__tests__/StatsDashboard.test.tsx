@@ -209,18 +209,20 @@ describe("StatsDashboard", () => {
     expect(clicksByLinkIndex).toBeGreaterThan(referrerIndex);
   });
 
-  it("링크별 유입 경로 섹션을 렌더한다", async () => {
+  it("링크별 유입 경로 섹션을 렌더한다(도넛차트 + 상세 테이블)", async () => {
     const { StatsDashboard } = await import("../StatsDashboard");
     render(<StatsDashboard {...defaultProps} />);
     expect(screen.getByText("링크별 유입 경로")).toBeInTheDocument();
-    expect(screen.getByText("social")).toBeInTheDocument();
+    // "social"은 도넛차트 범례와 상세 테이블 양쪽에 렌더된다.
+    expect(screen.getAllByText("social").length).toBe(2);
+    expect(screen.getByRole("img", { name: "유입 경로별 비중" })).toBeInTheDocument();
   });
 
-  it("유입 경로 기록이 없으면 empty message를 보여준다", async () => {
+  it("유입 경로 기록이 없으면 도넛차트와 테이블 양쪽에 empty message를 보여준다", async () => {
     const noMediums: StatsSummary = { ...summaryWithData, clicksByLinkAndMedium: [] };
     const { StatsDashboard } = await import("../StatsDashboard");
     render(<StatsDashboard {...defaultProps} summary={noMediums} />);
-    expect(screen.getByText("아직 클릭 기록이 없습니다.")).toBeInTheDocument();
+    expect(screen.getAllByText("아직 클릭 기록이 없습니다.").length).toBe(2);
   });
 
   it("데이터가 전혀 없으면 empty state를 보여준다", async () => {

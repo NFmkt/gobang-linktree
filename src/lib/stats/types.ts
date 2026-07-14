@@ -34,6 +34,12 @@ export type LinkMediumBreakdown = {
   mediums: { medium: string; count: number }[];
 };
 
+/** 링크 구분 없이 전체를 utm_medium(유입 경로) 기준으로만 합산한 한 항목. */
+export type MediumShare = {
+  medium: string;
+  count: number;
+};
+
 export type DailyTrendPoint = {
   /** YYYY-MM-DD (UTC) */
   date: string;
