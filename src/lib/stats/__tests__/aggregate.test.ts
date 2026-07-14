@@ -2,9 +2,9 @@ import { describe, it, expect } from "vitest";
 import {
   countByType,
   aggregateClicksByLink,
+  aggregateClicksByLinkAndMedium,
   aggregateDailyTrend,
   aggregateTopReferrers,
-  aggregateTopCampaigns,
   aggregateWeekdayDistribution,
   aggregatePeriodOverPeriod,
   buildStatsSummary,
@@ -67,26 +67,25 @@ describe("aggregateClicksByLink", () => {
     expect(aggregateClicksByLink(events, links)).toEqual([{ linkId: "home", title: "홈", count: 1 }]);
   });
 
-  it("링크 목록에 없는 link_id는 '삭제된 링크'로 표시한다", () => {
-    const events = [makeEvent({ type: "click", link_id: "deleted-id" })];
-    expect(aggregateClicksByLink(events, links)).toEqual([
-      { linkId: "deleted-id", title: "삭제된 링크", count: 1 },
-    ]);
+  it("링크 목록에 없는 link_id(삭제된 링크)는 통계에서 제외한다", () => {
+    const events = [
+      makeEvent({ type: "click", link_id: "deleted-id" }),
+      makeEvent({ type: "click", link_id: "home" }),
+    ];
+    expect(aggregateClicksByLink(events, links)).toEqual([{ linkId: "home", title: "홈", count: 1 }]);
   });
 
   it("빈 이벤트 배열이면 빈 배열을 반환한다", () => {
     expect(aggregateClicksByLink([], links)).toEqual([]);
   });
 
-  it("서로 다른 삭제된 링크 2개 이상은 '삭제된 링크' 한 행으로 합산한다", () => {
+  it("삭제된 링크만 클릭된 경우 결과가 완전히 빈 배열이다", () => {
     const events = [
       makeEvent({ type: "click", link_id: "deleted-a" }),
       makeEvent({ type: "click", link_id: "deleted-b" }),
       makeEvent({ type: "click", link_id: "deleted-b" }),
     ];
-    expect(aggregateClicksByLink(events, links)).toEqual([
-      { linkId: "__deleted__", title: "삭제된 링크", count: 3 },
-    ]);
+    expect(aggregateClicksByLink(events, links)).toEqual([]);
   });
 
   it("count가 동일하면 title 가나다순으로 정렬해 순서를 안정적으로 만든다", () => {
@@ -175,16 +174,17 @@ describe("aggregateTopReferrers", () => {
     expect(aggregateTopReferrers(events)).toEqual([]);
   });
 
-  it("count 내림차순 정렬 후 limit개만 반환한다", () => {
+  it("count 내림차순으로 정렬하며 개수 제한 없이 전체를 반환한다", () => {
     const events = [
       makeEvent({ type: "pageview", utm_source: "a" }),
       makeEvent({ type: "pageview", utm_source: "a" }),
       makeEvent({ type: "pageview", utm_source: "b" }),
       makeEvent({ type: "pageview", utm_source: "c" }),
     ];
-    expect(aggregateTopReferrers(events, 2)).toEqual([
+    expect(aggregateTopReferrers(events)).toEqual([
       { source: "a", count: 2 },
       { source: "b", count: 1 },
+      { source: "c", count: 1 },
     ]);
   });
 
@@ -200,32 +200,60 @@ describe("aggregateTopReferrers", () => {
   });
 });
 
-describe("aggregateTopCampaigns", () => {
-  it("utm_campaign이 있는 pageview만 집계한다", () => {
-    const events = [
-      makeEvent({ type: "pageview", utm_campaign: "summer-sale" }),
-      makeEvent({ type: "pageview", utm_campaign: "summer-sale" }),
-      makeEvent({ type: "pageview", utm_campaign: null }),
-      makeEvent({ type: "click", link_id: "home", utm_campaign: "summer-sale" }),
-    ];
-    expect(aggregateTopCampaigns(events)).toEqual([{ campaign: "summer-sale", count: 2 }]);
-  });
+describe("aggregateClicksByLinkAndMedium", () => {
+  const links: LinkTitleRow[] = [
+    { id: "home", title: "홈" },
+    { id: "blog", title: "블로그" },
+  ];
 
-  it("캠페인이 하나도 없으면 빈 배열을 반환한다", () => {
-    expect(aggregateTopCampaigns([makeEvent({ type: "pageview" })])).toEqual([]);
-  });
-
-  it("count 내림차순 정렬 후 limit개만 반환한다", () => {
+  it("링크별로 utm_medium별 클릭수를 교차 집계한다", () => {
     const events = [
-      makeEvent({ type: "pageview", utm_campaign: "a" }),
-      makeEvent({ type: "pageview", utm_campaign: "a" }),
-      makeEvent({ type: "pageview", utm_campaign: "b" }),
-      makeEvent({ type: "pageview", utm_campaign: "c" }),
+      makeEvent({ type: "click", link_id: "home", utm_medium: "social" }),
+      makeEvent({ type: "click", link_id: "home", utm_medium: "social" }),
+      makeEvent({ type: "click", link_id: "home", utm_medium: "email" }),
+      makeEvent({ type: "click", link_id: "blog", utm_medium: "social" }),
     ];
-    expect(aggregateTopCampaigns(events, 2)).toEqual([
-      { campaign: "a", count: 2 },
-      { campaign: "b", count: 1 },
+    expect(aggregateClicksByLinkAndMedium(events, links)).toEqual([
+      {
+        linkId: "home",
+        title: "홈",
+        total: 3,
+        mediums: [
+          { medium: "social", count: 2 },
+          { medium: "email", count: 1 },
+        ],
+      },
+      {
+        linkId: "blog",
+        title: "블로그",
+        total: 1,
+        mediums: [{ medium: "social", count: 1 }],
+      },
     ]);
+  });
+
+  it("utm_medium이 없는 클릭은 '미지정'으로 묶는다", () => {
+    const events = [
+      makeEvent({ type: "click", link_id: "home", utm_medium: null }),
+      makeEvent({ type: "click", link_id: "home", utm_medium: null }),
+    ];
+    expect(aggregateClicksByLinkAndMedium(events, links)).toEqual([
+      { linkId: "home", title: "홈", total: 2, mediums: [{ medium: "미지정", count: 2 }] },
+    ]);
+  });
+
+  it("삭제된 링크(links 목록에 없는 link_id)는 제외한다", () => {
+    const events = [makeEvent({ type: "click", link_id: "deleted-id", utm_medium: "social" })];
+    expect(aggregateClicksByLinkAndMedium(events, links)).toEqual([]);
+  });
+
+  it("pageview 타입은 집계에서 제외한다", () => {
+    const events = [makeEvent({ type: "pageview", link_id: "home", utm_medium: "social" })];
+    expect(aggregateClicksByLinkAndMedium(events, links)).toEqual([]);
+  });
+
+  it("빈 이벤트 배열이면 빈 배열을 반환한다", () => {
+    expect(aggregateClicksByLinkAndMedium([], links)).toEqual([]);
   });
 });
 
@@ -378,7 +406,9 @@ describe("buildStatsSummary", () => {
     expect(summary.dailyTrend).toHaveLength(7);
     expect(summary.dailyTrend[6]).toEqual({ date: "2026-07-10", count: 1 });
     expect(summary.topReferrers).toEqual([{ source: "직접 방문", count: 1 }]);
-    expect(summary.topCampaigns).toEqual([]);
+    expect(summary.clicksByLinkAndMedium).toEqual([
+      { linkId: "home", title: "홈", total: 1, mediums: [{ medium: "미지정", count: 1 }] },
+    ]);
     expect(summary.weekdayDistribution).toHaveLength(7);
     expect(summary.clickThroughRate).toBe(100);
     expect(summary.pageviewsPeriodOverPeriod).toEqual({ current: 1, previous: 0, changePercent: null });
@@ -399,17 +429,17 @@ describe("buildStatsSummary", () => {
     expect(summary.clickThroughRate).toBeCloseTo(2.8, 1);
   });
 
-  it("from~to 범위 밖 이벤트는 클릭순위/유입출처/캠페인/요일분포 집계에서 제외한다", () => {
+  it("from~to 범위 밖 이벤트는 클릭순위/유입출처/유입경로/요일분포 집계에서 제외한다", () => {
     const links: LinkTitleRow[] = [{ id: "home", title: "홈" }];
     const events = [
       makeEvent({ type: "click", link_id: "home", created_at: "2026-07-05T00:00:00.000Z" }), // 범위 내
       makeEvent({ type: "click", link_id: "home", created_at: "2026-06-01T00:00:00.000Z" }), // 범위 밖
-      makeEvent({ type: "pageview", utm_campaign: "sale", created_at: "2026-07-05T00:00:00.000Z" }), // 범위 내
-      makeEvent({ type: "pageview", utm_campaign: "sale", created_at: "2026-06-01T00:00:00.000Z" }), // 범위 밖
     ];
     const summary = buildStatsSummary(events, links, from, to);
     expect(summary.clicksByLink).toEqual([{ linkId: "home", title: "홈", count: 1 }]);
-    expect(summary.topCampaigns).toEqual([{ campaign: "sale", count: 1 }]);
+    expect(summary.clicksByLinkAndMedium).toEqual([
+      { linkId: "home", title: "홈", total: 1, mediums: [{ medium: "미지정", count: 1 }] },
+    ]);
   });
 
   it("capped 인자를 넘기면 그대로 결과에 반영한다", () => {

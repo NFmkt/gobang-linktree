@@ -1,9 +1,9 @@
 import type {
-  CampaignCount,
   DailyTrendPoint,
   EventRow,
   ExactTotals,
   LinkClickCount,
+  LinkMediumBreakdown,
   LinkTitleRow,
   PageviewsPeriodOverPeriod,
   ReferrerCount,
@@ -11,10 +11,8 @@ import type {
   WeekdayCount,
 } from "./types";
 
-const DEFAULT_TOP_REFERRERS_LIMIT = 5;
-const DEFAULT_TOP_CAMPAIGNS_LIMIT = 5;
-const DELETED_LINK_TITLE = "삭제된 링크";
-const DELETED_LINK_ID = "__deleted__";
+/** utm_medium이 없는 클릭에 붙이는 폴백 라벨. */
+const UNSPECIFIED_MEDIUM = "미지정";
 /** getUTCDay() 인덱스(0=일~6=토) 순서를 월~일로 재배열. */
 const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -37,38 +35,20 @@ export function countByType(events: EventRow[], type: "pageview" | "click"): num
   return events.filter((event) => event.type === type).length;
 }
 
+/** 삭제된 링크(links 테이블에 더 이상 없는 link_id)의 과거 클릭 기록은 통계에서 제외한다. */
 export function aggregateClicksByLink(events: EventRow[], links: LinkTitleRow[]): LinkClickCount[] {
   const titleById = new Map(links.map((link) => [link.id, link.title]));
   const countById = new Map<string, number>();
 
   for (const event of events) {
     if (event.type !== "click" || !event.link_id) continue;
+    if (!titleById.has(event.link_id)) continue;
     countById.set(event.link_id, (countById.get(event.link_id) ?? 0) + 1);
   }
 
-  const rows = Array.from(countById.entries()).map(([linkId, count]) => ({
-    linkId,
-    title: titleById.get(linkId) ?? DELETED_LINK_TITLE,
-    count,
-  }));
-
-  const activeRows = rows.filter((row) => titleById.has(row.linkId));
-  const deletedRows = rows.filter((row) => !titleById.has(row.linkId));
-
-  const mergedDeletedRows =
-    deletedRows.length > 1
-      ? [
-          {
-            linkId: DELETED_LINK_ID,
-            title: DELETED_LINK_TITLE,
-            count: deletedRows.reduce((sum, row) => sum + row.count, 0),
-          },
-        ]
-      : deletedRows;
-
-  return [...activeRows, ...mergedDeletedRows].sort(
-    (a, b) => b.count - a.count || byLocaleKo(a.title, b.title),
-  );
+  return Array.from(countById.entries())
+    .map(([linkId, count]) => ({ linkId, title: titleById.get(linkId)!, count }))
+    .sort((a, b) => b.count - a.count || byLocaleKo(a.title, b.title));
 }
 
 function toDateKey(isoString: string): string {
@@ -109,10 +89,8 @@ function referrerSource(event: EventRow): string {
   }
 }
 
-export function aggregateTopReferrers(
-  events: EventRow[],
-  limit: number = DEFAULT_TOP_REFERRERS_LIMIT,
-): ReferrerCount[] {
+/** 유입출처는 "TOP N"이 아니라 전체를 보여준다 — 개수 제한 없이 count 내림차순으로 반환한다. */
+export function aggregateTopReferrers(events: EventRow[]): ReferrerCount[] {
   const countBySource = new Map<string, number>();
   for (const event of events) {
     if (event.type !== "pageview") continue;
@@ -122,24 +100,44 @@ export function aggregateTopReferrers(
 
   return Array.from(countBySource.entries())
     .map(([source, count]) => ({ source, count }))
-    .sort((a, b) => b.count - a.count || byLocaleKo(a.source, b.source))
-    .slice(0, limit);
+    .sort((a, b) => b.count - a.count || byLocaleKo(a.source, b.source));
 }
 
-export function aggregateTopCampaigns(
+/**
+ * 링크별 클릭을 utm_medium(유입 경로)별로 교차 집계한다.
+ * 삭제된 링크(links 테이블에 없는 link_id)는 aggregateClicksByLink와 동일하게 제외한다.
+ * utm_medium이 없는 클릭은 "미지정"으로 묶는다.
+ */
+export function aggregateClicksByLinkAndMedium(
   events: EventRow[],
-  limit: number = DEFAULT_TOP_CAMPAIGNS_LIMIT,
-): CampaignCount[] {
-  const countByCampaign = new Map<string, number>();
+  links: LinkTitleRow[],
+): LinkMediumBreakdown[] {
+  const titleById = new Map(links.map((link) => [link.id, link.title]));
+  const countByLinkAndMedium = new Map<string, Map<string, number>>();
+
   for (const event of events) {
-    if (event.type !== "pageview" || !event.utm_campaign) continue;
-    countByCampaign.set(event.utm_campaign, (countByCampaign.get(event.utm_campaign) ?? 0) + 1);
+    if (event.type !== "click" || !event.link_id) continue;
+    if (!titleById.has(event.link_id)) continue;
+
+    const medium = event.utm_medium ?? UNSPECIFIED_MEDIUM;
+    const byMedium = countByLinkAndMedium.get(event.link_id) ?? new Map<string, number>();
+    byMedium.set(medium, (byMedium.get(medium) ?? 0) + 1);
+    countByLinkAndMedium.set(event.link_id, byMedium);
   }
 
-  return Array.from(countByCampaign.entries())
-    .map(([campaign, count]) => ({ campaign, count }))
-    .sort((a, b) => b.count - a.count || byLocaleKo(a.campaign, b.campaign))
-    .slice(0, limit);
+  return Array.from(countByLinkAndMedium.entries())
+    .map(([linkId, byMedium]) => {
+      const mediums = Array.from(byMedium.entries())
+        .map(([medium, count]) => ({ medium, count }))
+        .sort((a, b) => b.count - a.count || byLocaleKo(a.medium, b.medium));
+      return {
+        linkId,
+        title: titleById.get(linkId)!,
+        total: mediums.reduce((sum, m) => sum + m.count, 0),
+        mediums,
+      };
+    })
+    .sort((a, b) => b.total - a.total || byLocaleKo(a.title, b.title));
 }
 
 export function aggregateWeekdayDistribution(events: EventRow[]): WeekdayCount[] {
@@ -232,9 +230,9 @@ export function buildStatsSummary(
       exactTotals ? { current: exactTotals.pageviews, previous: exactTotals.previousPageviews } : undefined,
     ),
     clicksByLink: aggregateClicksByLink(rangeEvents, links),
+    clicksByLinkAndMedium: aggregateClicksByLinkAndMedium(rangeEvents, links),
     dailyTrend: aggregateDailyTrend(rangeEvents, from, to),
     topReferrers: aggregateTopReferrers(rangeEvents),
-    topCampaigns: aggregateTopCampaigns(rangeEvents),
     weekdayDistribution: aggregateWeekdayDistribution(rangeEvents),
     capped,
   };

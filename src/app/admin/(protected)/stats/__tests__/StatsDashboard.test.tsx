@@ -9,6 +9,9 @@ const summaryWithData: StatsSummary = {
   clickThroughRate: 40.5,
   pageviewsPeriodOverPeriod: { current: 42, previous: 30, changePercent: 40 },
   clicksByLink: [{ linkId: "home", title: "홈", count: 10 }],
+  clicksByLinkAndMedium: [
+    { linkId: "home", title: "홈", total: 10, mediums: [{ medium: "social", count: 10 }] },
+  ],
   dailyTrend: [
     { date: "2026-07-04", count: 1 },
     { date: "2026-07-05", count: 2 },
@@ -19,7 +22,6 @@ const summaryWithData: StatsSummary = {
     { date: "2026-07-10", count: 7 },
   ],
   topReferrers: [{ source: "instagram.com", count: 20 }],
-  topCampaigns: [{ campaign: "summer-sale", count: 5 }],
   weekdayDistribution: [
     { weekday: "월", count: 5 },
     { weekday: "화", count: 3 },
@@ -38,9 +40,9 @@ const emptySummary: StatsSummary = {
   clickThroughRate: null,
   pageviewsPeriodOverPeriod: { current: 0, previous: 0, changePercent: null },
   clicksByLink: [],
+  clicksByLinkAndMedium: [],
   dailyTrend: [],
   topReferrers: [],
-  topCampaigns: [],
   weekdayDistribution: [],
   capped: false,
 };
@@ -78,7 +80,7 @@ describe("StatsDashboard", () => {
     render(<StatsDashboard {...defaultProps} />);
     expect(screen.getByText("42")).toBeInTheDocument();
     expect(screen.getByText("17")).toBeInTheDocument();
-    expect(screen.getByText("홈")).toBeInTheDocument();
+    expect(screen.getAllByText("홈").length).toBeGreaterThan(0);
     expect(screen.getByText("instagram.com")).toBeInTheDocument();
   });
 
@@ -120,18 +122,18 @@ describe("StatsDashboard", () => {
     expect(screen.getByText("일")).toBeInTheDocument();
   });
 
-  it("캠페인별 유입 TOP 섹션을 렌더한다", async () => {
+  it("링크별 유입 경로 섹션을 렌더한다", async () => {
     const { StatsDashboard } = await import("../StatsDashboard");
     render(<StatsDashboard {...defaultProps} />);
-    expect(screen.getByText("캠페인별 유입 TOP")).toBeInTheDocument();
-    expect(screen.getByText("summer-sale")).toBeInTheDocument();
+    expect(screen.getByText("링크별 유입 경로")).toBeInTheDocument();
+    expect(screen.getByText("social")).toBeInTheDocument();
   });
 
-  it("캠페인 기록이 없으면 empty message를 보여준다", async () => {
-    const noCampaigns: StatsSummary = { ...summaryWithData, topCampaigns: [] };
+  it("유입 경로 기록이 없으면 empty message를 보여준다", async () => {
+    const noMediums: StatsSummary = { ...summaryWithData, clicksByLinkAndMedium: [] };
     const { StatsDashboard } = await import("../StatsDashboard");
-    render(<StatsDashboard {...defaultProps} summary={noCampaigns} />);
-    expect(screen.getByText("아직 캠페인 유입 기록이 없습니다.")).toBeInTheDocument();
+    render(<StatsDashboard {...defaultProps} summary={noMediums} />);
+    expect(screen.getByText("아직 클릭 기록이 없습니다.")).toBeInTheDocument();
   });
 
   it("데이터가 전혀 없으면 empty state를 보여준다", async () => {

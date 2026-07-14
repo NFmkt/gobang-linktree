@@ -13,4 +13,7 @@ export type EventPayload =
   | {
       type: "click";
       link_id: string;
+      utm_source?: string;
+      utm_medium?: string;
+      utm_campaign?: string;
     };

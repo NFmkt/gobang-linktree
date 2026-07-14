@@ -129,88 +129,98 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
 
       {error ? <p className="text-[13px] text-[var(--color-danger)]">{error}</p> : null}
 
-      {isCreating ? (
-        <LinkForm
-          mode="create"
-          nextOrder={links.length + 1}
-          onSaved={handleFormSaved}
-          onCancel={() => setIsCreating(false)}
-        />
-      ) : null}
-
-      {editingLink ? (
-        <LinkForm
-          mode="edit"
-          link={editingLink}
-          onSaved={handleFormSaved}
-          onCancel={() => setEditingLink(null)}
-        />
-      ) : null}
-
-      <ul className="flex flex-col gap-2">
-        {links.map((link, index) => (
-          <li
-            key={link.id}
-            draggable
-            onDragStart={() => handleDragStart(link.id)}
-            onDragOver={handleDragOver}
-            onDrop={() => void handleDrop(link.id)}
-            className="flex items-center gap-3 rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-[var(--sh-sm)]"
-          >
-            <span className="flex shrink-0 flex-col">
-              <button
-                type="button"
-                onClick={() => handleMoveUp(link.id)}
-                disabled={index === 0}
-                aria-label="위로 이동"
-                className="focus-glow flex min-h-11 min-w-11 items-center justify-center rounded-[var(--r-sm)] text-[13px] text-[var(--color-ink-2)] hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-[var(--color-ink-2)]"
-              >
-                ▲
-              </button>
-              <button
-                type="button"
-                onClick={() => handleMoveDown(link.id)}
-                disabled={index === links.length - 1}
-                aria-label="아래로 이동"
-                className="focus-glow flex min-h-11 min-w-11 items-center justify-center rounded-[var(--r-sm)] text-[13px] text-[var(--color-ink-2)] hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-[var(--color-ink-2)]"
-              >
-                ▼
-              </button>
-            </span>
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--r-sm)] bg-[var(--color-blue-50)]">
-              <LinkIcon iconKey={link.icon} className="h-5 w-5" />
-            </span>
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate text-[14px] font-bold text-[var(--color-ink)]">
-                {link.title}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px] lg:items-start">
+        <ul className="flex flex-col gap-2">
+          {links.map((link, index) => (
+            <li
+              key={link.id}
+              draggable
+              onDragStart={() => handleDragStart(link.id)}
+              onDragOver={handleDragOver}
+              onDrop={() => void handleDrop(link.id)}
+              className="flex items-center gap-3 rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-[var(--sh-sm)]"
+            >
+              <span className="flex shrink-0 flex-col">
+                <button
+                  type="button"
+                  onClick={() => handleMoveUp(link.id)}
+                  disabled={index === 0}
+                  aria-label="위로 이동"
+                  className="focus-glow flex min-h-11 min-w-11 items-center justify-center rounded-[var(--r-sm)] text-[13px] text-[var(--color-ink-2)] hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-[var(--color-ink-2)]"
+                >
+                  ▲
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleMoveDown(link.id)}
+                  disabled={index === links.length - 1}
+                  aria-label="아래로 이동"
+                  className="focus-glow flex min-h-11 min-w-11 items-center justify-center rounded-[var(--r-sm)] text-[13px] text-[var(--color-ink-2)] hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-[var(--color-ink-2)]"
+                >
+                  ▼
+                </button>
               </span>
-              <span className="truncate text-[12.5px] text-[var(--color-ink-2)]">{link.url}</span>
-            </span>
-            <span className="flex items-center gap-1.5 text-[12.5px] text-[var(--color-ink-2)]">
-              <ToggleSwitch
-                checked={link.active}
-                onChange={() => void handleToggleActive(link)}
-                aria-label="노출"
-              />
-              노출
-            </span>
-            <button
-              type="button"
-              onClick={() => setEditingLink(link)}
-              className="focus-glow min-h-11 rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-border-strong)] px-2.5 py-1 text-[12.5px] font-semibold text-[var(--color-ink-2)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
-            >
-              수정
-            </button>
-            <button
-              type="button"
-              onClick={() => void handleDelete(link)}
-              className="focus-glow min-h-11 rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-border-strong)] px-2.5 py-1 text-[12.5px] font-semibold text-[var(--color-danger)]"
-            >
-              삭제
-            </button>
-          </li>
-        ))}
-      </ul>
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--r-sm)] bg-[var(--color-blue-50)]">
+                <LinkIcon iconKey={link.icon} className="h-5 w-5" />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-[14px] font-bold text-[var(--color-ink)]">
+                  {link.title}
+                </span>
+                <span className="truncate text-[12.5px] text-[var(--color-ink-2)]">{link.url}</span>
+              </span>
+              <span className="flex items-center gap-1.5 text-[12.5px] text-[var(--color-ink-2)]">
+                <ToggleSwitch
+                  checked={link.active}
+                  onChange={() => void handleToggleActive(link)}
+                  aria-label="노출"
+                />
+                노출
+              </span>
+              <button
+                type="button"
+                onClick={() => setEditingLink(link)}
+                className="focus-glow min-h-11 rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-border-strong)] px-2.5 py-1 text-[12.5px] font-semibold text-[var(--color-ink-2)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+              >
+                수정
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleDelete(link)}
+                className="focus-glow min-h-11 rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-border-strong)] px-2.5 py-1 text-[12.5px] font-semibold text-[var(--color-danger)]"
+              >
+                삭제
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        <aside className="flex flex-col gap-3 lg:sticky lg:top-5">
+          {isCreating ? (
+            <LinkForm
+              mode="create"
+              nextOrder={links.length + 1}
+              onSaved={handleFormSaved}
+              onCancel={() => setIsCreating(false)}
+            />
+          ) : null}
+
+          {editingLink ? (
+            <LinkForm
+              mode="edit"
+              link={editingLink}
+              onSaved={handleFormSaved}
+              onCancel={() => setEditingLink(null)}
+            />
+          ) : null}
+
+          {!isCreating && !editingLink ? (
+            <p className="rounded-[var(--r)] border border-dashed border-[var(--color-border-strong)] p-4 text-[12.5px] text-[var(--color-ink-2)]">
+              링크를 추가하거나 목록에서 &ldquo;수정&rdquo;을 눌러 여기서 편집하세요.
+            </p>
+          ) : null}
+        </aside>
+      </div>
     </div>
   );
 }

@@ -88,6 +88,30 @@ describe("POST /api/events", () => {
     });
   });
 
+  it("utm 파라미터가 담긴 click 요청도 그대로 insert한다 (링크x매체 교차 분석용)", async () => {
+    const insert = vi.fn().mockResolvedValue({ error: null });
+    const from = vi.fn().mockReturnValue({ insert });
+    vi.doMock("@/lib/supabase/server", () => ({
+      createServerSupabaseClient: vi.fn().mockResolvedValue({ from }),
+    }));
+    vi.resetModules();
+
+    const { POST } = await import("../route");
+    const res = await POST(
+      makeRequest({ type: "click", link_id: "youth", utm_source: "insta", utm_medium: "social" }),
+    );
+
+    expect(res.status).toBe(204);
+    expect(insert).toHaveBeenCalledWith({
+      type: "click",
+      link_id: "youth",
+      referrer: null,
+      utm_source: "insta",
+      utm_medium: "social",
+      utm_campaign: null,
+    });
+  });
+
   it("supabase insert가 에러를 반환하면 500을 반환한다", async () => {
     const insert = vi.fn().mockResolvedValue({ error: { message: "db down" } });
     const from = vi.fn().mockReturnValue({ insert });

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { BarChart } from "@/components/admin/BarChart";
 import { LineChart } from "@/components/admin/LineChart";
+import { LinkMediumTable } from "@/components/admin/LinkMediumTable";
 import type { StatsSummary } from "@/lib/stats/types";
 import { computeCustomRange, computePresetRange, type DatePreset } from "@/lib/stats/dateRangePresets";
 
@@ -153,17 +154,7 @@ export function StatsDashboard({ summary: initialSummary, initialPreset, initial
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-[18px] font-extrabold text-[var(--color-ink)]">통계</h1>
-        <button
-          type="button"
-          onClick={() => void handleReset()}
-          disabled={controlsDisabled}
-          className="focus-glow min-h-11 rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-border-strong)] px-3 py-1.5 text-[12.5px] font-semibold text-[var(--color-danger)] disabled:opacity-50"
-        >
-          {resetting ? "초기화 중..." : "통계 초기화"}
-        </button>
-      </div>
+      <h1 className="text-[18px] font-extrabold text-[var(--color-ink)]">통계</h1>
 
       <div className="flex flex-col gap-3 rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
         <div className="flex flex-wrap gap-2">
@@ -237,7 +228,7 @@ export function StatsDashboard({ summary: initialSummary, initialPreset, initial
         </p>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
               <p className="text-[12.5px] font-semibold text-[var(--color-ink-2)]">총 방문수</p>
               <div className="flex items-baseline gap-1.5">
@@ -262,46 +253,63 @@ export function StatsDashboard({ summary: initialSummary, initialPreset, initial
           </div>
 
           <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
-            <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">링크별 클릭수 순위</h2>
-            <BarChart
-              items={summary.clicksByLink.map((item) => ({ label: item.title, value: item.count }))}
-              emptyMessage="아직 클릭 기록이 없습니다."
-            />
-          </section>
-
-          <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
             <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">방문 추이</h2>
             <LineChart points={trendPoints} emptyMessage="아직 방문 기록이 없습니다." />
           </section>
 
-          <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
-            <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">요일별 방문 분포</h2>
-            <BarChart
-              items={summary.weekdayDistribution.map((item) => ({
-                label: item.weekday,
-                value: item.count,
-              }))}
-              emptyMessage="아직 방문 기록이 없습니다."
-            />
-          </section>
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
+              <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">링크별 클릭수</h2>
+              <BarChart
+                items={summary.clicksByLink.map((item) => ({ label: item.title, value: item.count }))}
+                emptyMessage="아직 클릭 기록이 없습니다."
+              />
+            </section>
+
+            <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
+              <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">요일별 방문 분포</h2>
+              <BarChart
+                items={summary.weekdayDistribution.map((item) => ({
+                  label: item.weekday,
+                  value: item.count,
+                }))}
+                emptyMessage="아직 방문 기록이 없습니다."
+              />
+            </section>
+
+            <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
+              <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">링크트리 유입 출처</h2>
+              <BarChart
+                items={summary.topReferrers.map((item) => ({ label: item.source, value: item.count }))}
+                emptyMessage="아직 유입 기록이 없습니다."
+              />
+            </section>
+          </div>
 
           <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
-            <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">유입출처 TOP</h2>
-            <BarChart
-              items={summary.topReferrers.map((item) => ({ label: item.source, value: item.count }))}
-              emptyMessage="아직 유입 기록이 없습니다."
-            />
-          </section>
-
-          <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
-            <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">캠페인별 유입 TOP</h2>
-            <BarChart
-              items={summary.topCampaigns.map((item) => ({ label: item.campaign, value: item.count }))}
-              emptyMessage="아직 캠페인 유입 기록이 없습니다."
+            <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">링크별 유입 경로</h2>
+            <LinkMediumTable
+              rows={summary.clicksByLinkAndMedium}
+              emptyMessage="아직 클릭 기록이 없습니다."
             />
           </section>
         </>
       )}
+
+      <section className="flex flex-col items-start gap-2 rounded-[var(--r)] border-[1.5px] border-[var(--color-danger)] bg-[var(--color-surface)] p-4">
+        <h2 className="text-[13px] font-bold text-[var(--color-danger)]">위험 구역</h2>
+        <p className="text-[12.5px] text-[var(--color-ink-2)]">
+          통계 데이터를 초기화하면 되돌릴 수 없습니다. 링크·설정에는 영향을 주지 않습니다.
+        </p>
+        <button
+          type="button"
+          onClick={() => void handleReset()}
+          disabled={controlsDisabled}
+          className="focus-glow min-h-11 rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-danger)] px-3 py-1.5 text-[12.5px] font-semibold text-[var(--color-danger)] disabled:opacity-50"
+        >
+          {resetting ? "초기화 중..." : "통계 초기화"}
+        </button>
+      </section>
     </div>
   );
 }

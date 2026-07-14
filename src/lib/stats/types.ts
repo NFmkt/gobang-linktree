@@ -26,6 +26,14 @@ export type LinkClickCount = {
   count: number;
 };
 
+/** 링크별 클릭을 utm_medium(유입 경로)별로 나눈 교차 집계 한 행. */
+export type LinkMediumBreakdown = {
+  linkId: string;
+  title: string;
+  total: number;
+  mediums: { medium: string; count: number }[];
+};
+
 export type DailyTrendPoint = {
   /** YYYY-MM-DD (UTC) */
   date: string;
@@ -34,11 +42,6 @@ export type DailyTrendPoint = {
 
 export type ReferrerCount = {
   source: string;
-  count: number;
-};
-
-export type CampaignCount = {
-  campaign: string;
   count: number;
 };
 
@@ -77,10 +80,11 @@ export type StatsSummary = {
   clickThroughRate: number | null;
   pageviewsPeriodOverPeriod: PageviewsPeriodOverPeriod;
   clicksByLink: LinkClickCount[];
+  /** 링크별 클릭을 유입 경로(utm_medium)별로 나눈 교차 집계. */
+  clicksByLinkAndMedium: LinkMediumBreakdown[];
   /** 선택된 from~to 범위의 하루 단위 방문 추이(양 끝 날짜 포함). */
   dailyTrend: DailyTrendPoint[];
   topReferrers: ReferrerCount[];
-  topCampaigns: CampaignCount[];
   weekdayDistribution: WeekdayCount[];
   /** 이벤트 조회가 limit(10000)에 도달해 잘렸으면 true(총계 KPI 제외 나머지 집계가 부분 데이터일 수 있음을 의미). */
   capped: boolean;

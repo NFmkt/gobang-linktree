@@ -58,7 +58,29 @@ describe("LinkButton", () => {
     render(<LinkButton link={link} />);
     const anchor = screen.getByRole("link", { name: new RegExp(link.title) });
     fireEvent.click(anchor);
-    expect(sendEventBeacon).toHaveBeenCalledWith({ type: "click", link_id: link.id });
+    expect(sendEventBeacon).toHaveBeenCalledWith({
+      type: "click",
+      link_id: link.id,
+      utm_source: undefined,
+      utm_medium: undefined,
+      utm_campaign: undefined,
+    });
+  });
+
+  it("현재 URL에 utm 파라미터가 있으면 클릭 이벤트에도 함께 담아 보낸다", () => {
+    vi.mocked(sendEventBeacon).mockClear();
+    window.history.pushState({}, "", "/?utm_source=insta&utm_medium=social");
+    render(<LinkButton link={link} />);
+    const anchor = screen.getByRole("link", { name: new RegExp(link.title) });
+    fireEvent.click(anchor);
+    expect(sendEventBeacon).toHaveBeenCalledWith({
+      type: "click",
+      link_id: link.id,
+      utm_source: "insta",
+      utm_medium: "social",
+      utm_campaign: undefined,
+    });
+    window.history.pushState({}, "", "/");
   });
 });
 
