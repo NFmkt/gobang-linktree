@@ -8,6 +8,12 @@ import { BlogIcon } from "./BlogIcon";
 import { InstagramIcon } from "./InstagramIcon";
 import { YoutubeIcon } from "./YoutubeIcon";
 import { KakaoIcon } from "./KakaoIcon";
+import { MapIcon } from "./MapIcon";
+import { PhoneIcon } from "./PhoneIcon";
+import { NoticeIcon } from "./NoticeIcon";
+import { CalendarIcon } from "./CalendarIcon";
+import { ShopIcon } from "./ShopIcon";
+import { DocumentIcon } from "./DocumentIcon";
 import { DefaultLinkIcon } from "./DefaultLinkIcon";
 
 /**
@@ -25,6 +31,12 @@ export const ICON_MAP: Record<string, ComponentType<IconProps>> = {
   instagram: InstagramIcon,
   youtube: YoutubeIcon,
   kakao: KakaoIcon,
+  map: MapIcon,
+  phone: PhoneIcon,
+  notice: NoticeIcon,
+  calendar: CalendarIcon,
+  shop: ShopIcon,
+  document: DocumentIcon,
 };
 
 export { DefaultLinkIcon };

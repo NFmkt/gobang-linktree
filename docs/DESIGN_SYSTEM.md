@@ -71,7 +71,7 @@
 
 ## 8. 아이콘
 - **icon-design 스킬(TOSSFACE) 기준 fill 전용 다색 아이콘 세트**, `viewBox 0 0 20 20`. `IconBase`가 stroke→fill 래퍼로 동작. (초기 S7 산출물은 stroke 라인 세트였으나 이는 스킬 위반으로 판정되어 전면 fill 다색으로 교체됨 — stroke/outline 아이콘 금지.)
-- ICON_MAP: 기존 6키(home/youth/feed/series/youtube/default) + 신규 3키(blog/instagram/kakao) 총 9키.
+- ICON_MAP: 기존 6키(home/youth/feed/series/youtube/default) + 3키(blog/instagram/kakao) + 범용 콘텐츠 6키(map/phone/notice/calendar/shop/document, 2026-07-14 추가) 총 15키.
 - 칩/버튼 배경은 `#EEF3FF`(blue-50) 고정, 소셜 아이콘만 브랜드색 예외(§6 참조). 이모지 금지. 링크별 아이콘은 관리자 드롭다운 선택(S4).
 
 ## 9. 관리자 대시보드 상속

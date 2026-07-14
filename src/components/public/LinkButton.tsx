@@ -4,6 +4,7 @@ import type { Link } from "@/lib/links/types";
 import { LinkIcon } from "@/components/icons/LinkIcon";
 import { sendEventBeacon } from "@/lib/events/sendBeacon";
 import { getUtmParams } from "@/lib/events/getUtmParams";
+import { isSafeLinkUrl } from "@/lib/links/isSafeLinkUrl";
 
 type LinkButtonProps = {
   link: Link;
@@ -21,6 +22,7 @@ type LinkButtonProps = {
  */
 export function LinkButton({ link, delayMs }: LinkButtonProps) {
   const animated = delayMs !== undefined;
+  const hasThumbnail = Boolean(link.thumbnail && isSafeLinkUrl(link.thumbnail));
   return (
     <a
       href={link.url}
@@ -28,9 +30,19 @@ export function LinkButton({ link, delayMs }: LinkButtonProps) {
       className={`focus-glow group flex min-h-[68px] w-full items-center gap-3.5 rounded-[var(--r)] border-[1.5px] border-[var(--color-border-strong)] bg-[var(--color-surface)] px-4 py-3.5 text-[var(--color-ink)] shadow-[var(--sh-sm)] transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[var(--color-primary)] hover:shadow-[0_0_0_4px_var(--color-blue-ring)] active:translate-y-0 active:scale-[0.99] motion-reduce:transition-none motion-reduce:hover:translate-y-0 focus-visible:border-[var(--color-primary)]${animated ? " reveal" : ""}`}
       style={animated ? { animationDelay: `${delayMs}ms` } : undefined}
     >
-      <span className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[12px] bg-[var(--color-blue-50)]">
-        <LinkIcon iconKey={link.icon} className="h-[22px] w-[22px]" />
-      </span>
+      {hasThumbnail ? (
+        // eslint-disable-next-line @next/next/no-img-element -- 임의 외부 URL이라 next/image remotePatterns 설정 없이 그대로 렌더
+        <img
+          src={link.thumbnail}
+          alt=""
+          loading="lazy"
+          className="h-[46px] w-[46px] shrink-0 rounded-[12px] object-cover"
+        />
+      ) : (
+        <span className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[12px] bg-[var(--color-blue-50)]">
+          <LinkIcon iconKey={link.icon} className="h-[22px] w-[22px]" />
+        </span>
+      )}
       <span className="flex min-w-0 flex-1 flex-col items-start">
         <span className="truncate text-[16px] font-extrabold leading-tight tracking-[-0.01em]">
           {link.title}

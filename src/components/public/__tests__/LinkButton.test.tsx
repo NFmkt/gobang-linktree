@@ -40,6 +40,25 @@ describe("LinkButton", () => {
     expect(screen.queryByText("보조 설명")).not.toBeInTheDocument();
   });
 
+  it("thumbnail이 없으면 아이콘 칩을 렌더한다", () => {
+    render(<LinkButton link={link} />);
+    const anchor = screen.getByRole("link", { name: new RegExp(link.title) });
+    expect(anchor.querySelector("img")).not.toBeInTheDocument();
+  });
+
+  it("thumbnail이 있으면 아이콘 대신 썸네일 이미지를 렌더한다", () => {
+    render(<LinkButton link={{ ...link, thumbnail: "https://cdn.test/thumb.jpg" }} />);
+    const anchor = screen.getByRole("link", { name: new RegExp(link.title) });
+    const img = anchor.querySelector("img");
+    expect(img).toHaveAttribute("src", "https://cdn.test/thumb.jpg");
+  });
+
+  it("thumbnail이 안전하지 않은 스킴이면 무시하고 아이콘 칩을 렌더한다", () => {
+    render(<LinkButton link={{ ...link, thumbnail: "javascript:alert(1)" }} />);
+    const anchor = screen.getByRole("link", { name: new RegExp(link.title) });
+    expect(anchor.querySelector("img")).not.toBeInTheDocument();
+  });
+
   it("focus-visible 시 블루 글로우 링 스타일(focus-glow)을 갖는다", () => {
     render(<LinkButton link={link} />);
     const anchor = screen.getByRole("link", { name: new RegExp(link.title) });

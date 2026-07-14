@@ -6,6 +6,10 @@ import { LineChart } from "@/components/admin/LineChart";
 import { LinkMediumTable } from "@/components/admin/LinkMediumTable";
 import type { StatsSummary } from "@/lib/stats/types";
 import { computeCustomRange, computePresetRange, type DatePreset } from "@/lib/stats/dateRangePresets";
+import { buildStatsCsv } from "@/lib/stats/buildStatsCsv";
+
+/** Excel에서 UTF-8 CSV의 한글이 깨지지 않도록 붙이는 BOM(U+FEFF). */
+const CSV_BOM = "﻿";
 
 type SelectedRange = DatePreset | "custom";
 
@@ -150,11 +154,32 @@ export function StatsDashboard({ summary: initialSummary, initialPreset, initial
     }
   }
 
+  function handleDownloadCsv() {
+    const csv = CSV_BOM + buildStatsCsv(summary);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `통계_${activeRange.from.slice(0, 10)}_${activeRange.to.slice(0, 10)}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   const controlsDisabled = loading || resetting;
 
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="text-[18px] font-extrabold text-[var(--color-ink)]">통계</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-[18px] font-extrabold text-[var(--color-ink)]">통계</h1>
+        <button
+          type="button"
+          onClick={handleDownloadCsv}
+          disabled={controlsDisabled || isEmpty}
+          className="focus-glow min-h-11 rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-border-strong)] px-3 py-1.5 text-[12.5px] font-semibold text-[var(--color-ink-2)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] disabled:opacity-50"
+        >
+          CSV 다운로드
+        </button>
+      </div>
 
       <div className="flex flex-col gap-3 rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
         <div className="flex flex-wrap gap-2">

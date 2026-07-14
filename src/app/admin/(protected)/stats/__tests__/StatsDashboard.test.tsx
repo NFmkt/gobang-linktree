@@ -84,6 +84,31 @@ describe("StatsDashboard", () => {
     expect(screen.getByText("instagram.com")).toBeInTheDocument();
   });
 
+  it("CSV 다운로드 버튼 클릭 시 통계 CSV를 담은 Blob으로 다운로드를 트리거한다", async () => {
+    const createObjectURL = vi.fn().mockReturnValue("blob:mock-url");
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", { ...URL, createObjectURL, revokeObjectURL });
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+
+    const { StatsDashboard } = await import("../StatsDashboard");
+    render(<StatsDashboard {...defaultProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "CSV 다운로드" }));
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    const blob = createObjectURL.mock.calls[0][0] as Blob;
+    expect(blob.type).toBe("text/csv;charset=utf-8;");
+    const text = await blob.text();
+    expect(text).toContain("총 방문수,42");
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:mock-url");
+  });
+
+  it("데이터가 전혀 없으면 CSV 다운로드 버튼이 비활성화된다", async () => {
+    const { StatsDashboard } = await import("../StatsDashboard");
+    render(<StatsDashboard {...defaultProps} summary={emptySummary} />);
+    expect(screen.getByRole("button", { name: "CSV 다운로드" })).toBeDisabled();
+  });
+
   it("클릭률 KPI 카드를 보여준다", async () => {
     const { StatsDashboard } = await import("../StatsDashboard");
     render(<StatsDashboard {...defaultProps} />);

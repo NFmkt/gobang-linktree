@@ -29,6 +29,14 @@ describe("getLinkIcon", () => {
     }
   });
 
+  it("범용 콘텐츠 키(map/phone/notice/calendar/shop/document)에 대해 아이콘 컴포넌트를 반환한다", () => {
+    for (const key of ["map", "phone", "notice", "calendar", "shop", "document"]) {
+      const Icon = getLinkIcon(key);
+      const { container } = render(<Icon />);
+      expect(container.querySelector("svg")).toBeInTheDocument();
+    }
+  });
+
   it("매칭되지 않는 키는 기본 아이콘으로 폴백한다", () => {
     const Icon = getLinkIcon("unknown-key-xyz");
     const { container } = render(<Icon />);

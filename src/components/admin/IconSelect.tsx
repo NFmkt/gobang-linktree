@@ -11,6 +11,12 @@ export const ICON_OPTIONS = [
   "instagram",
   "youtube",
   "kakao",
+  "map",
+  "phone",
+  "notice",
+  "calendar",
+  "shop",
+  "document",
 ] as const;
 
 type IconSelectProps = {
