@@ -168,6 +168,55 @@ describe("LineChart", () => {
     expect(ticks400.length).toBeLessThanOrEqual(10);
   });
 
+  it("컨테이너 폭이 좁으면(모바일 등) 넓은 화면보다 눈금 목표치를 더 줄인다", () => {
+    const points30 = Array.from({ length: 30 }, (_, i) => ({
+      date: `2026-07-${String(i + 1).padStart(2, "0")}`,
+      count: i + 1,
+    }));
+
+    // 넓은 컨테이너(파일 스코프 기본 모킹, 600px) 기준 눈금 개수
+    const { container: wideContainer } = render(
+      <LineChart points={points30} emptyMessage="데이터가 없습니다." />,
+    );
+    const wideTicks = wideContainer.querySelectorAll(
+      ".recharts-xAxis-tick-labels .recharts-cartesian-axis-tick-label",
+    );
+
+    // 모바일 수준의 좁은 컨테이너(375px)로 이 테스트에서만 일시적으로 재모킹
+    const originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function () {
+      return {
+        width: 375,
+        height: 160,
+        top: 0,
+        left: 0,
+        right: 375,
+        bottom: 160,
+        x: 0,
+        y: 0,
+        toJSON() {
+          return {};
+        },
+      };
+    };
+
+    let narrowContainer: HTMLElement;
+    try {
+      narrowContainer = render(
+        <LineChart points={points30} emptyMessage="데이터가 없습니다." />,
+      ).container;
+    } finally {
+      Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    }
+
+    const narrowTicks = narrowContainer.querySelectorAll(
+      ".recharts-xAxis-tick-labels .recharts-cartesian-axis-tick-label",
+    );
+
+    expect(narrowTicks.length).toBeLessThan(wideTicks.length);
+    expect(narrowTicks.length).toBeLessThanOrEqual(5);
+  });
+
   it("포인트가 60개를 초과하면(예: '전체' 프리셋) dot을 전혀 렌더하지 않고 라인과 캡션만 남긴다", () => {
     const points = Array.from({ length: 400 }, (_, i) => ({
       date: `point-${i}`,
@@ -185,6 +234,9 @@ describe("LineChart", () => {
         <LineChartTooltipContent
           active
           label="2026-07-10"
+          coordinate={{ x: 0, y: 0 }}
+          accessibilityLayer={false}
+          activeIndex={null}
           payload={[
             {
               value: 5,
@@ -192,6 +244,7 @@ describe("LineChart", () => {
               name: "count",
               color: "var(--color-primary)",
               payload: { date: "2026-07-10", count: 5 },
+              graphicalItemId: "count",
             },
           ]}
         />,
@@ -202,13 +255,29 @@ describe("LineChart", () => {
 
     it("active가 false면 아무것도 렌더하지 않는다", () => {
       const { container } = render(
-        <LineChartTooltipContent active={false} label="2026-07-10" payload={[]} />,
+        <LineChartTooltipContent
+          active={false}
+          label="2026-07-10"
+          payload={[]}
+          coordinate={{ x: 0, y: 0 }}
+          accessibilityLayer={false}
+          activeIndex={null}
+        />,
       );
       expect(container).toBeEmptyDOMElement();
     });
 
     it("payload가 비어있으면 아무것도 렌더하지 않는다", () => {
-      const { container } = render(<LineChartTooltipContent active label="2026-07-10" payload={[]} />);
+      const { container } = render(
+        <LineChartTooltipContent
+          active
+          label="2026-07-10"
+          payload={[]}
+          coordinate={{ x: 0, y: 0 }}
+          accessibilityLayer={false}
+          activeIndex={null}
+        />,
+      );
       expect(container).toBeEmptyDOMElement();
     });
   });

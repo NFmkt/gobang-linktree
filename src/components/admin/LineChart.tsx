@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   CartesianGrid,
   LabelList,
@@ -31,8 +32,23 @@ const DIRECT_LABEL_THRESHOLD = 10;
  * 포인트마다 DOM 노드를 만들면 렌더가 무거워지고 점들이 뭉개져 판독도 안 된다.
  */
 const MAX_MARKER_POINTS = 60;
-/** x축에 표시할 눈금 개수의 대략적인 목표치. 포인트가 많아질수록 interval을 키워 라벨 겹침을 막는다. */
-const TARGET_TICK_COUNT = 8;
+/** x축에 표시할 눈금 개수의 대략적인 목표치(넓은 컨테이너 기준). 포인트가 많아질수록 interval을 키워 라벨 겹침을 막는다. */
+const TARGET_TICK_COUNT_WIDE = 8;
+/**
+ * 모바일 등 좁은 컨테이너에서는 같은 눈금 개수라도 라벨 하나당 가용 폭이 줄어 겹치기 쉽다.
+ * `TARGET_TICK_COUNT_WIDE`는 jsdom 테스트에서 쓰던 ~600px 폭 기준으로만 검증되어 있었으므로,
+ * 실측 컨테이너 폭이 이 임계값보다 좁으면 눈금 목표치를 더 줄인다.
+ */
+const NARROW_CONTAINER_WIDTH = 420;
+const TARGET_TICK_COUNT_NARROW = 4;
+/** ResponsiveContainer가 아직 실측 폭을 보고하지 않은 첫 렌더에서 쓰는 기본값(넓은 화면으로 가정). */
+const DEFAULT_CONTAINER_WIDTH = 600;
+
+function getTargetTickCount(containerWidth: number): number {
+  return containerWidth < NARROW_CONTAINER_WIDTH
+    ? TARGET_TICK_COUNT_NARROW
+    : TARGET_TICK_COUNT_WIDE;
+}
 
 function formatShortDate(dateKey: string): string {
   const parts = dateKey.split("-");
@@ -61,13 +77,16 @@ export function LineChartTooltipContent({ active, payload, label }: TooltipConte
 }
 
 export function LineChart({ points, emptyMessage }: LineChartProps) {
+  const [containerWidth, setContainerWidth] = useState(DEFAULT_CONTAINER_WIDTH);
+
   if (points.length === 0) {
     return <p className="text-[13px] text-[var(--color-ink-2)]">{emptyMessage}</p>;
   }
 
   const showDirectLabels = points.length <= DIRECT_LABEL_THRESHOLD;
   const showMarkers = points.length <= MAX_MARKER_POINTS;
-  const tickInterval = Math.max(0, Math.ceil(points.length / TARGET_TICK_COUNT) - 1);
+  const targetTickCount = getTargetTickCount(containerWidth);
+  const tickInterval = Math.max(0, Math.ceil(points.length / targetTickCount) - 1);
 
   const peakIndex = points.reduce(
     (best, point, index) => (point.count > points[best].count ? index : best),
@@ -77,7 +96,11 @@ export function LineChart({ points, emptyMessage }: LineChartProps) {
 
   return (
     <div role="img" aria-label="일별 방문 추이">
-      <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+      <ResponsiveContainer
+        width="100%"
+        height={CHART_HEIGHT}
+        onResize={(width) => setContainerWidth(width)}
+      >
         <RechartsLineChart
           data={points}
           margin={{ top: showDirectLabels ? 18 : 8, right: 8, bottom: 0, left: -20 }}
