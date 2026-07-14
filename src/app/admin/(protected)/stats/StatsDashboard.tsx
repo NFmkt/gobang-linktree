@@ -284,29 +284,18 @@ export function StatsDashboard({ summary: initialSummary, initialPreset, initial
 
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
-              <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">링크별 클릭수</h2>
-              <BarChart
-                items={summary.clicksByLink.map((item) => ({ label: item.title, value: item.count }))}
-                emptyMessage="아직 클릭 기록이 없습니다."
-              />
-            </section>
-
-            <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
-              <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">요일별 방문 분포</h2>
-              <BarChart
-                items={summary.weekdayDistribution.map((item) => ({
-                  label: item.weekday,
-                  value: item.count,
-                }))}
-                emptyMessage="아직 방문 기록이 없습니다."
-              />
-            </section>
-
-            <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
               <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">링크트리 유입 출처</h2>
               <BarChart
                 items={summary.topReferrers.map((item) => ({ label: item.source, value: item.count }))}
                 emptyMessage="아직 유입 기록이 없습니다."
+              />
+            </section>
+
+            <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
+              <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">링크별 클릭수</h2>
+              <BarChart
+                items={summary.clicksByLink.map((item) => ({ label: item.title, value: item.count }))}
+                emptyMessage="아직 클릭 기록이 없습니다."
               />
             </section>
           </div>

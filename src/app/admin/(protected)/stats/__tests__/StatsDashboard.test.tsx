@@ -139,12 +139,20 @@ describe("StatsDashboard", () => {
     expect(screen.queryByText(/▲|▼/)).not.toBeInTheDocument();
   });
 
-  it("요일별 방문 분포 섹션을 렌더한다", async () => {
+  it("요일별 방문 분포 섹션은 더 이상 렌더하지 않는다", async () => {
     const { StatsDashboard } = await import("../StatsDashboard");
     render(<StatsDashboard {...defaultProps} />);
-    expect(screen.getByText("요일별 방문 분포")).toBeInTheDocument();
-    expect(screen.getByText("월")).toBeInTheDocument();
-    expect(screen.getByText("일")).toBeInTheDocument();
+    expect(screen.queryByText("요일별 방문 분포")).not.toBeInTheDocument();
+  });
+
+  it("링크트리 유입 출처, 링크별 클릭수 섹션을 이 순서로 렌더한다", async () => {
+    const { StatsDashboard } = await import("../StatsDashboard");
+    render(<StatsDashboard {...defaultProps} />);
+    const headings = screen.getAllByRole("heading", { level: 2 }).map((el) => el.textContent);
+    const referrerIndex = headings.indexOf("링크트리 유입 출처");
+    const clicksByLinkIndex = headings.indexOf("링크별 클릭수");
+    expect(referrerIndex).toBeGreaterThanOrEqual(0);
+    expect(clicksByLinkIndex).toBeGreaterThan(referrerIndex);
   });
 
   it("링크별 유입 경로 섹션을 렌더한다", async () => {
