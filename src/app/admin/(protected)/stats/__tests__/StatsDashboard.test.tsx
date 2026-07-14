@@ -1,7 +1,31 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll, afterAll } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import type { StatsSummary } from "@/lib/stats/types";
 import { computePresetRange } from "@/lib/stats/dateRangePresets";
+
+/**
+ * 방문 추이 섹션은 recharts 기반 <LineChart>를 렌더한다. recharts의
+ * <ResponsiveContainer>는 실제로 ResizeObserver로 부모 크기를 측정해야 SVG를 그리는데,
+ * jsdom은 이를 구현하지 않아(getBoundingClientRect도 항상 0) 모킹이 없으면 차트가
+ * 아예 렌더되지 않는다. 이 모킹은 이 테스트 파일에만 스코프된다.
+ */
+class MockResizeObserver implements ResizeObserver {
+  #callback: ResizeObserverCallback;
+
+  constructor(callback: ResizeObserverCallback) {
+    this.#callback = callback;
+  }
+
+  observe(target: Element) {
+    this.#callback(
+      [{ target, contentRect: target.getBoundingClientRect() } as ResizeObserverEntry],
+      this,
+    );
+  }
+
+  unobserve() {}
+  disconnect() {}
+}
 
 const summaryWithData: StatsSummary = {
   totalPageviews: 42,
@@ -66,6 +90,36 @@ function expectedStatsUrl(from: Date, to: Date): string {
 }
 
 describe("StatsDashboard", () => {
+  let originalResizeObserver: typeof ResizeObserver | undefined;
+  let originalGetBoundingClientRect: typeof Element.prototype.getBoundingClientRect;
+
+  beforeAll(() => {
+    originalResizeObserver = window.ResizeObserver;
+    originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
+
+    window.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
+    Element.prototype.getBoundingClientRect = function () {
+      return {
+        width: 600,
+        height: 160,
+        top: 0,
+        left: 0,
+        right: 600,
+        bottom: 160,
+        x: 0,
+        y: 0,
+        toJSON() {
+          return {};
+        },
+      };
+    };
+  });
+
+  afterAll(() => {
+    window.ResizeObserver = originalResizeObserver as typeof ResizeObserver;
+    Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+  });
+
   beforeEach(() => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
   });
