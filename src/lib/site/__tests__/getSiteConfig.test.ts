@@ -29,6 +29,7 @@ describe("getSiteConfig", () => {
       social: [{ key: "home", label: "홈", url: "https://db.test" }],
       affiliate_email: "db@test.com",
       affiliate_label: "DB제휴",
+      affiliate_sheet_url: "https://docs.google.com/spreadsheets/d/db",
     };
     const maybeSingle = vi.fn().mockResolvedValue({ data: dbRow, error: null });
     const eq = vi.fn().mockReturnValue({ maybeSingle });
@@ -49,6 +50,7 @@ describe("getSiteConfig", () => {
       social: dbRow.social,
       affiliateEmail: "db@test.com",
       affiliateLabel: "DB제휴",
+      affiliateSheetUrl: "https://docs.google.com/spreadsheets/d/db",
     });
     expect(from).toHaveBeenCalledWith("site_settings");
     expect(eq).toHaveBeenCalledWith("id", "default");

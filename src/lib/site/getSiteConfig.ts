@@ -15,7 +15,7 @@ export async function getSiteConfig(): Promise<SiteConfig> {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("site_settings")
-    .select("brand_name, bio, social, affiliate_email, affiliate_label")
+    .select("brand_name, bio, social, affiliate_email, affiliate_label, affiliate_sheet_url")
     .eq("id", "default")
     .maybeSingle();
 
@@ -33,5 +33,6 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     social: data.social,
     affiliateEmail: data.affiliate_email,
     affiliateLabel: data.affiliate_label,
+    affiliateSheetUrl: data.affiliate_sheet_url,
   };
 }

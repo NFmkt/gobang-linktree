@@ -14,6 +14,7 @@ type UpdateSettingsBody = {
   social?: SocialUpdateItem[];
   affiliate_email?: string;
   affiliate_label?: string;
+  affiliate_sheet_url?: string;
 };
 
 function isValidEmail(email: string): boolean {
@@ -64,12 +65,24 @@ export async function PATCH(request: Request) {
     }
   }
 
+  if (
+    body.affiliate_sheet_url !== undefined &&
+    body.affiliate_sheet_url !== "" &&
+    !isSafeLinkUrl(body.affiliate_sheet_url)
+  ) {
+    return NextResponse.json(
+      { error: "제휴 시트 URL 형식이 올바르지 않습니다" },
+      { status: 400 },
+    );
+  }
+
   const updates: Record<string, unknown> = {};
   if (body.brand_name !== undefined) updates.brand_name = body.brand_name;
   if (body.bio !== undefined) updates.bio = body.bio;
   if (body.social !== undefined) updates.social = body.social;
   if (body.affiliate_email !== undefined) updates.affiliate_email = body.affiliate_email;
   if (body.affiliate_label !== undefined) updates.affiliate_label = body.affiliate_label;
+  if (body.affiliate_sheet_url !== undefined) updates.affiliate_sheet_url = body.affiliate_sheet_url;
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "변경할 필드가 없습니다" }, { status: 400 });

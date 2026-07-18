@@ -21,6 +21,7 @@ describe("GET /api/admin/settings", () => {
       social: [],
       affiliate_email: "a@b.com",
       affiliate_label: "제휴",
+      affiliate_sheet_url: "https://docs.google.com/spreadsheets/d/abc",
     };
     const maybeSingle = vi.fn().mockResolvedValue({ data: row, error: null });
     const eq = vi.fn().mockReturnValue({ maybeSingle });
@@ -107,6 +108,80 @@ describe("PATCH /api/admin/settings", () => {
 
     expect(res.status).toBe(400);
     expect(from).not.toHaveBeenCalled();
+  });
+
+  it("affiliate_sheet_url이 javascript: 스킴이면 400을 반환하고 update하지 않는다", async () => {
+    const from = vi.fn();
+    vi.doMock("@/lib/supabase/server", () => ({
+      createServiceSupabaseClient: vi.fn().mockReturnValue({ from }),
+    }));
+    vi.resetModules();
+
+    const { PATCH } = await import("../route");
+    const res = await PATCH(makeRequest({ affiliate_sheet_url: "javascript:alert(1)" }));
+
+    expect(res.status).toBe(400);
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it("affiliate_sheet_url이 빈 문자열이면 통과하고 update된다(필수 아님)", async () => {
+    const updatedRow = {
+      id: "default",
+      brand_name: "고방",
+      bio: "bio",
+      social: [],
+      affiliate_email: "a@b.com",
+      affiliate_label: "제휴",
+      affiliate_sheet_url: "",
+    };
+    const maybeSingle = vi.fn().mockResolvedValue({ data: updatedRow, error: null });
+    const select = vi.fn().mockReturnValue({ maybeSingle });
+    const eq = vi.fn().mockReturnValue({ select });
+    const update = vi.fn().mockReturnValue({ eq });
+    const from = vi.fn().mockReturnValue({ update });
+    vi.doMock("@/lib/supabase/server", () => ({
+      createServiceSupabaseClient: vi.fn().mockReturnValue({ from }),
+    }));
+    vi.resetModules();
+
+    const { PATCH } = await import("../route");
+    const res = await PATCH(makeRequest({ affiliate_sheet_url: "" }));
+
+    expect(res.status).toBe(200);
+    expect(update).toHaveBeenCalledWith({ affiliate_sheet_url: "" });
+  });
+
+  it("정상적인 affiliate_sheet_url이면 200과 갱신된 설정을 반환한다", async () => {
+    const updatedRow = {
+      id: "default",
+      brand_name: "고방",
+      bio: "bio",
+      social: [],
+      affiliate_email: "a@b.com",
+      affiliate_label: "제휴",
+      affiliate_sheet_url: "https://docs.google.com/spreadsheets/d/abc",
+    };
+    const maybeSingle = vi.fn().mockResolvedValue({ data: updatedRow, error: null });
+    const select = vi.fn().mockReturnValue({ maybeSingle });
+    const eq = vi.fn().mockReturnValue({ select });
+    const update = vi.fn().mockReturnValue({ eq });
+    const from = vi.fn().mockReturnValue({ update });
+    vi.doMock("@/lib/supabase/server", () => ({
+      createServiceSupabaseClient: vi.fn().mockReturnValue({ from }),
+    }));
+    vi.resetModules();
+
+    const { PATCH } = await import("../route");
+    const res = await PATCH(
+      makeRequest({ affiliate_sheet_url: "https://docs.google.com/spreadsheets/d/abc" }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(update).toHaveBeenCalledWith({
+      affiliate_sheet_url: "https://docs.google.com/spreadsheets/d/abc",
+    });
+    expect(body.settings).toEqual(updatedRow);
   });
 
   it("정상 업데이트 시 200과 갱신된 설정을 반환한다", async () => {
