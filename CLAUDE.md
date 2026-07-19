@@ -1,0 +1,40 @@
+# 프로젝트 규칙 (CLAUDE.md) — 고방 링크트리
+
+이 문서는 상위 [../../CLAUDE.md](../../CLAUDE.md)의 규칙을 상속합니다. 신규 작업(새 슬라이스, 리팩터, 버그 수정) 시작 전 반드시 상위 문서의 4단계 파이프라인(기획·grill-me → 디자인 → 이슈 분할 → 리소스 승인 → 서브에이전트 TDD)을 그대로 따르십시오. 아래는 이 프로젝트에만 적용되는 구체 규칙·함정입니다.
+
+## 문서 맵
+- **인수인계/이력**: [HANDOFF.md](HANDOFF.md) (gitignore됨, 로컬 전용 — 새 세션/계정에서는 이 파일이 없을 수 있음)
+- **스펙**: [docs/SPEC.md](docs/SPEC.md)
+- **디자인 시스템(SoT)**: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md)
+- **개발 슬라이스 TODO**: [docs/TODO.md](docs/TODO.md)
+- **진행원장(로컬, gitignore)**: `.superpowers/sdd/progress.md`
+
+## 프로젝트 기본 정보
+- **스택**: Next.js 16 (App Router, Turbopack) + TypeScript + **Tailwind v4**(설정은 `tailwind.config.js` 없이 `src/app/globals.css`의 `@theme`) + Supabase + Vercel. 폰트 Pretendard 단일.
+- **로컬 포트**: **3939** (`시작 3939.bat`, `next dev -p 3939` 하드코딩). 새 하위 프로젝트를 만들 때도 이 포트와 중복 금지.
+- **배포**: GitHub `NFmkt/gobang-linktree`(public) + Vercel `https://gobang-linktree.vercel.app` (GitHub 연동, `main` push 시 자동 배포).
+- **검증 커맨드**:
+  - 테스트: `npx vitest run`
+  - 린트: `npm run lint` (`next lint`는 Next 16에서 제거됨 — `eslint` 직접 실행)
+  - 빌드: `npx next build`
+  - 프리뷰 서버명(launch.json): `gobang-linktree` (port 3939)
+- **`.env.local` 필요**: Supabase URL/anon/service_role + `ADMIN_PASSWORD`. gitignore됨 — 새 세션에서는 `.env.example` 참고해 재구성하거나 기존 값을 전달받을 것.
+
+## 이 프로젝트만의 함정 (반드시 지킬 것)
+- **`middleware.ts`가 아니라 `src/proxy.ts`**: Next.js 16.2.10부터 "middleware" 컨벤션이 deprecated, "proxy"로 대체됨(파일명·export 함수명 둘 다). 관리자 라우트(`/admin/*`, `/api/admin/*`) 보호 로직이 여기 있음.
+- **디자인 토큰은 전부 `src/app/globals.css`**의 `:root`/`@theme`. 컴포넌트는 `bg-[var(--color-...)]` 형태 arbitrary value로만 참조. 색을 바꾸려면 여기부터.
+- **아이콘은 stroke 금지, fill 전용 다색**(`@icon-design` 스킬 계약, `viewBox 0 0 20 20`). 브랜드 인지용 소셜 아이콘(네이버 그린/인스타 마젠타 등)만 팔레트 확장 예외.
+- **사용자 입력 URL을 `<a href>`로 렌더할 때는 항상 `src/lib/links/isSafeLinkUrl.ts` 같은 스킴 화이트리스트 검증**: React의 자동 escape는 텍스트 콘텐츠에만 적용되고 `javascript:`/`data:` 스킴은 막아주지 않음.
+- **`service_role`도 RLS 우회일 뿐 GRANT를 자동으로 갖지 않음**: 새 Supabase 테이블 추가 시 `anon`뿐 아니라 `service_role`에도 명시적 `grant`를 마이그레이션에 포함할 것 (누락 시 로컬·배포 모두에서 `permission denied for table X` 재현됨).
+- **Supabase 마이그레이션 적용**: DB 비밀번호가 없어 `supabase db push` CLI 불가 — 대시보드 SQL Editor에 마이그레이션 파일 내용을 직접 붙여넣어 실행.
+- **React list `key`는 실제 유일값 사용**: 삭제된 항목을 공통 폴백 라벨("삭제된 링크" 등)로 표시하는 집계에서는 라벨이 중복될 수 있음 — `key={`${label}-${index}`}` 형태로.
+- **넓은 날짜 범위/무제한 리스트를 그리는 차트는 포인트 수 상한을 둘 것**: `LineChart`가 `MAX_MARKER_POINTS` 초과 시 개별 마커 렌더를 생략하는 패턴(`src/components/admin/LineChart.tsx`) 참고 — 통계 등 범위가 커질 수 있는 값을 시각화할 때 이 패턴을 재사용.
+- **Server Component에서 `try{...}` 블록 안에 JSX를 직접 반환하지 말 것**: ESLint `react-hooks/error-boundaries` 위반. 데이터 fetch/에러 캡처만 try 안에서 하고, JSX 반환은 try/catch 밖에서 조건 분기.
+- **App Router에서 폴더명이 `_`로 시작하면 private folder 취급 → 라우트 미생성**(빌드 에러도 없이 조용히 404). 임시 진단 라우트에도 언더스코어 접두 피할 것.
+- **OG 이미지 한글 렌더**: Satori 기본 폰트에 한글 없음 → `src/app/fonts/`의 Pretendard `.otf`를 fs로 직접 읽어 넘김(node_modules 직접 참조 금지, 서버리스 번들 누락 위험).
+
+## 알려진 미해결 이슈
+- **⚠️ `ADMIN_PASSWORD`(구 값 `nfmkt`)가 과거 `HANDOFF.md` 커밋들을 통해 public repo git 히스토리에 노출됨**(파일 자체는 이후 gitignore 처리했지만 과거 커밋 diff에는 남아있음). 사용자가 "보류, 나중에 직접 처리"로 결정한 상태 — 다음 작업 시 아직 해결 안 됐으면 비번 로테이션/히스토리 재작성을 제안할 것.
+
+## 폴더 구조
+Next.js App Router 표준(`src/app`, `src/components`, `src/lib`) + `docs/`(스펙·설계·계획) + `supabase/migrations/`(SQL) + `public/`(정적 에셋). 상위 CLAUDE.md의 `src/`·`tests/`·`docs/`·`public/` 일반 원칙보다 이 프레임워크 표준 구조가 우선.
