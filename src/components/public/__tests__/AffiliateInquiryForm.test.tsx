@@ -75,6 +75,14 @@ describe("AffiliateInquiryForm", () => {
     expect(screen.getByRole("button", { name: /제출/ })).toBeEnabled();
   });
 
+  it("전화번호 입력 시 숫자만 입력해도 자동으로 하이픈이 들어간다", () => {
+    render(<AffiliateInquiryForm />);
+    fireEvent.change(screen.getByLabelText("전화번호"), {
+      target: { value: "01012345678" },
+    });
+    expect(screen.getByLabelText("전화번호")).toHaveValue("010-1234-5678");
+  });
+
   it("이메일만 채우면 제출 버튼이 활성화된다", () => {
     render(<AffiliateInquiryForm />);
     fillRequired({ email: "a@b.com" });
@@ -124,7 +132,9 @@ describe("AffiliateInquiryForm", () => {
     fillRequired({ email: "a@b.com" });
     fireEvent.click(screen.getByRole("button", { name: /제출/ }));
 
-    expect(await screen.findByText(/문의가 접수되었습니다/)).toBeInTheDocument();
+    const completionMessage = await screen.findByText(/문의가 접수되었습니다/);
+    expect(completionMessage).toBeInTheDocument();
+    expect(completionMessage).toHaveClass("text-center");
     expect(screen.queryByLabelText("회사명/소속")).not.toBeInTheDocument();
   });
 

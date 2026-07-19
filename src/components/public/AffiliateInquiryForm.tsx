@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { formatPhoneNumber } from "@/lib/format/formatPhoneNumber";
 
 type InquiryType = "ad" | "content" | "other";
 
@@ -75,7 +76,7 @@ export function AffiliateInquiryForm() {
 
   if (status === "success") {
     return (
-      <p className="rounded-[var(--r-sm)] bg-[var(--color-blue-50)] px-3 py-3 text-[14px] font-semibold text-[var(--color-primary)]">
+      <p className="rounded-[var(--r-sm)] bg-[var(--color-blue-50)] px-3 py-3 text-center text-[14px] font-semibold text-[var(--color-primary)]">
         문의가 접수되었습니다. 빠르게 확인 후 연락드릴게요.
       </p>
     );
@@ -120,7 +121,7 @@ export function AffiliateInquiryForm() {
           id={`${idPrefix}-phone`}
           type="tel"
           value={phone}
-          onChange={(event) => setPhone(event.target.value)}
+          onChange={(event) => setPhone(formatPhoneNumber(event.target.value))}
           className="focus-glow h-9 rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-border-strong)] bg-[var(--color-surface)] px-3 text-[14px] font-normal text-[var(--color-ink)] outline-none"
         />
       </label>
