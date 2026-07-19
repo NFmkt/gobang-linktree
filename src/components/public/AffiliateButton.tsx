@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import { sendEventBeacon } from "@/lib/events/sendBeacon";
+import { AffiliateInquiryForm } from "./AffiliateInquiryForm";
 
 type AffiliateButtonProps = {
   email: string;
@@ -45,14 +46,16 @@ export function AffiliateButton({ email, label, delayMs }: AffiliateButtonProps)
         </svg>
       </button>
       {open ? (
-        <a
-          id={panelId}
-          href={`mailto:${email}`}
-          onClick={() => sendEventBeacon({ type: "click", link_id: "affiliate" })}
-          className="focus-glow mt-2 flex min-h-[46px] w-full items-center justify-center rounded-[var(--r)] bg-[var(--color-blue-50)] px-4 text-[15px] font-semibold text-[var(--color-primary)] underline-offset-2 hover:underline"
-        >
-          {email}
-        </a>
+        <div id={panelId} className="accordion-panel mt-2 flex flex-col gap-3">
+          <a
+            href={`mailto:${email}`}
+            onClick={() => sendEventBeacon({ type: "click", link_id: "affiliate" })}
+            className="focus-glow flex min-h-[46px] w-full items-center justify-center rounded-[var(--r)] bg-[var(--color-blue-50)] px-4 text-[15px] font-semibold text-[var(--color-primary)] underline-offset-2 hover:underline"
+          >
+            {email}
+          </a>
+          <AffiliateInquiryForm />
+        </div>
       ) : null}
     </div>
   );
