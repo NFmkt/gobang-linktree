@@ -113,6 +113,46 @@ describe("POST /api/affiliate-inquiries", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("phone과 email이 둘 다 있어도 통과하고 둘 다 웹훅 페이로드에 포함된다", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { POST } = await import("../route");
+    const res = await POST(
+      makeRequest(validBody({ phone: "010-1234-5678", email: "biz@example.com" })),
+    );
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json).toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [, calledInit] = fetchMock.mock.calls[0];
+    const sentBody = JSON.parse(calledInit.body);
+    expect(sentBody).toMatchObject({
+      phone: "010-1234-5678",
+      email: "biz@example.com",
+    });
+  });
+
+  it.each(["content", "other"] as const)(
+    "inquiryType이 %s이면 정상 제출로 처리되어 웹훅을 호출한다",
+    async (inquiryType) => {
+      const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+      vi.stubGlobal("fetch", fetchMock);
+
+      const { POST } = await import("../route");
+      const res = await POST(makeRequest(validBody({ inquiryType })));
+      const json = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(json).toEqual({ ok: true });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const [, calledInit] = fetchMock.mock.calls[0];
+      const sentBody = JSON.parse(calledInit.body);
+      expect(sentBody).toMatchObject({ inquiryType });
+    },
+  );
+
   it("inquiryType이 허용값(ad/content/other) 밖이면 400을 반환한다", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
@@ -143,6 +183,32 @@ describe("POST /api/affiliate-inquiries", () => {
 
     const { POST } = await import("../route");
     const res = await POST(makeRequest(validBody({ formRenderedAt: Date.now() - 500 })));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json).toEqual({ ok: true });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("formRenderedAt이 누락되어 있으면 200을 반환하지만 웹훅은 호출하지 않는다", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { POST } = await import("../route");
+    const res = await POST(makeRequest(validBody({ formRenderedAt: undefined })));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json).toEqual({ ok: true });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("formRenderedAt이 파싱 불가능한 문자열이면 200을 반환하지만 웹훅은 호출하지 않는다", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { POST } = await import("../route");
+    const res = await POST(makeRequest(validBody({ formRenderedAt: "not-a-timestamp" })));
     const json = await res.json();
 
     expect(res.status).toBe(200);
