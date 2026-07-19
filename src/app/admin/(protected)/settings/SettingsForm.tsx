@@ -14,7 +14,7 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
   const [affiliateEmail, setAffiliateEmail] = useState(initialSettings.affiliate_email);
   const [affiliateLabel, setAffiliateLabel] = useState(initialSettings.affiliate_label);
   const [affiliateSheetUrl, setAffiliateSheetUrl] = useState(
-    initialSettings.affiliate_sheet_url,
+    initialSettings.affiliate_sheet_url ?? "",
   );
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);

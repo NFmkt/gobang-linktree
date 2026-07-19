@@ -31,6 +31,27 @@ describe("SettingsForm", () => {
     ).toBeInTheDocument();
   });
 
+  it("initialSettings.affiliate_sheet_url이 없으면(마이그레이션 0005 미적용) 빈 문자열 controlled input으로 렌더한다", () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const settingsWithoutSheetUrl = {
+      ...initialSettings,
+      affiliate_sheet_url: undefined,
+    } as unknown as SiteSettingsRow;
+
+    render(<SettingsForm initialSettings={settingsWithoutSheetUrl} />);
+
+    const sheetInput = screen.getByPlaceholderText(
+      "https://docs.google.com/spreadsheets/...",
+    ) as HTMLInputElement;
+    expect(sheetInput.value).toBe("");
+
+    const uncontrolledWarning = consoleErrorSpy.mock.calls.some((call) =>
+      String(call[0]).includes("changing an uncontrolled input"),
+    );
+    expect(uncontrolledWarning).toBe(false);
+    consoleErrorSpy.mockRestore();
+  });
+
   it("제휴 문의 시트 링크는 필수 입력이 아니다", () => {
     render(<SettingsForm initialSettings={initialSettings} />);
     const sheetInput = screen.getByPlaceholderText("https://docs.google.com/spreadsheets/...");

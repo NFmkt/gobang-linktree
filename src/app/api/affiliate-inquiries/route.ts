@@ -12,6 +12,8 @@ type AffiliateInquiryBody = {
 
 const VALID_INQUIRY_TYPES = new Set(["ad", "content", "other"]);
 const MIN_SUBMIT_DELAY_MS = 3000;
+const MAX_COMPANY_NAME_LENGTH = 200;
+const MAX_MESSAGE_LENGTH = 5000;
 
 /**
  * `formRenderedAt`은 폼이 화면에 렌더된 시각(ISO 문자열 또는 epoch ms)이다.
@@ -64,6 +66,20 @@ export async function POST(request: Request) {
   if (!body.phone && !body.email) {
     return NextResponse.json(
       { error: "phone 또는 email 중 최소 1개는 필수입니다" },
+      { status: 400 },
+    );
+  }
+
+  if (body.companyName.length > MAX_COMPANY_NAME_LENGTH) {
+    return NextResponse.json(
+      { error: `companyName은 ${MAX_COMPANY_NAME_LENGTH}자를 초과할 수 없습니다` },
+      { status: 400 },
+    );
+  }
+
+  if (body.message.length > MAX_MESSAGE_LENGTH) {
+    return NextResponse.json(
+      { error: `message는 ${MAX_MESSAGE_LENGTH}자를 초과할 수 없습니다` },
       { status: 400 },
     );
   }

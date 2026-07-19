@@ -153,6 +153,54 @@ describe("POST /api/affiliate-inquiries", () => {
     },
   );
 
+  it("companyName이 200자면(경계값) 통과한다", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { POST } = await import("../route");
+    const res = await POST(makeRequest(validBody({ companyName: "가".repeat(200) })));
+
+    expect(res.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("companyName이 200자를 초과하면 400을 반환하고 웹훅을 호출하지 않는다", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { POST } = await import("../route");
+    const res = await POST(makeRequest(validBody({ companyName: "가".repeat(201) })));
+    const json = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(json.error).toContain("companyName");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("message가 5000자면(경계값) 통과한다", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { POST } = await import("../route");
+    const res = await POST(makeRequest(validBody({ message: "가".repeat(5000) })));
+
+    expect(res.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("message가 5000자를 초과하면 400을 반환하고 웹훅을 호출하지 않는다", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { POST } = await import("../route");
+    const res = await POST(makeRequest(validBody({ message: "가".repeat(5001) })));
+    const json = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(json.error).toContain("message");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("inquiryType이 허용값(ad/content/other) 밖이면 400을 반환한다", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);

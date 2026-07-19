@@ -12,10 +12,14 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     return SITE_CONFIG;
   }
 
+  // 명시적 컬럼 목록 대신 "*"를 사용한다: affiliate_sheet_url 컬럼을 추가하는
+  // 마이그레이션(0005)이 아직 배포 DB에 적용되지 않은 상태에서 이 코드가 먼저
+  // 배포돼도, "*"는 존재하는 컬럼만 돌려주므로 42703(column does not exist)
+  // 에러 없이 동작한다. 누락된 필드는 아래에서 빈 문자열로 보정한다.
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("site_settings")
-    .select("brand_name, bio, social, affiliate_email, affiliate_label, affiliate_sheet_url")
+    .select("*")
     .eq("id", "default")
     .maybeSingle();
 
@@ -33,6 +37,6 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     social: data.social,
     affiliateEmail: data.affiliate_email,
     affiliateLabel: data.affiliate_label,
-    affiliateSheetUrl: data.affiliate_sheet_url,
+    affiliateSheetUrl: data.affiliate_sheet_url ?? "",
   };
 }
