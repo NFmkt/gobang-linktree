@@ -49,8 +49,14 @@
 - 관리자에서 링크 **추가 / 수정 / 삭제 / 드래그 순서변경** 가능 (핵심 요구).
 
 ## 5. 제휴·협력 문의
-- **`mailto:{저장된주소}`** 링크 버튼 방식 (서버 발송/폼 없음).
-- 기본 수신 주소 `neoflatworks2@gmail.com`, **관리자에서 실시간 수정 가능**.
+- 버튼을 누르면 **인라인 아코디언**이 펼쳐지며 `mailto:{저장된주소}` 링크와 문의 폼이 함께 노출된다
+  (즉답이 필요하면 mailto, 기록을 남기고 싶으면 폼 — 둘 다 항상 병기).
+- 기본 수신 주소(mailto용) `neoflatworks2@gmail.com`, **관리자에서 실시간 수정 가능**.
+- **문의 폼**: 회사명/소속·문의내용 필수, 전화번호·이메일은 최소 1개 필수, 문의유형(광고 문의/콘텐츠
+  제휴/기타) 선택. 허니팟 필드 + 최소 작성시간(3초) 검증으로 스팸을 걸러낸다.
+- 제출 시 `/api/affiliate-inquiries`(Next.js API 라우트)가 검증 후 **Google Apps Script 웹훅**
+  (`GAS_AFFILIATE_WEBHOOK_URL`)을 호출한다. Apps Script가 구글 시트에 한 행 백업 + 운영자 이메일 알림
+  (`MailApp.sendEmail`)을 처리한다. 배포·설정 절차는 [docs/affiliate-inquiry-apps-script.md](affiliate-inquiry-apps-script.md) 참고.
 - 제휴 버튼 클릭수는 통계로 집계.
 
 ## 6. 통계(Analytics)
