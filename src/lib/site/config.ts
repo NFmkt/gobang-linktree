@@ -26,6 +26,8 @@ export type SiteConfig = {
   affiliateEmail: string;
   /** 제휴·협력 문의 라벨 */
   affiliateLabel: string;
+  /** 관리자 "제휴 문의" 탭에서 새 탭으로 열어줄 시트 링크 (미등록 시 빈 문자열) */
+  affiliateSheetUrl: string;
 };
 
 /**
@@ -67,6 +69,7 @@ export const SITE_CONFIG: SiteConfig = {
   ],
   affiliateEmail: "neoflatworks2@gmail.com",
   affiliateLabel: "제휴·협력 문의",
+  affiliateSheetUrl: "",
 };
 
 /**
@@ -80,4 +83,5 @@ export type SiteSettingsRow = {
   social: SocialItem[];
   affiliate_email: string;
   affiliate_label: string;
+  affiliate_sheet_url: string;
 };

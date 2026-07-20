@@ -4,7 +4,9 @@ import { useState } from "react";
 import { BarChart } from "@/components/admin/BarChart";
 import { LineChart } from "@/components/admin/LineChart";
 import { LinkMediumTable } from "@/components/admin/LinkMediumTable";
+import { MediumDonutChart } from "@/components/admin/MediumDonutChart";
 import type { StatsSummary } from "@/lib/stats/types";
+import { aggregateMediumShare } from "@/lib/stats/aggregate";
 import { computeCustomRange, computePresetRange, type DatePreset } from "@/lib/stats/dateRangePresets";
 import { buildStatsCsv } from "@/lib/stats/buildStatsCsv";
 
@@ -90,6 +92,7 @@ export function StatsDashboard({ summary: initialSummary, initialPreset, initial
 
   const isEmpty = summary.totalPageviews === 0 && summary.totalClicks === 0;
   const trendPoints = summary.dailyTrend;
+  const mediumShare = aggregateMediumShare(summary.clicksByLinkAndMedium);
 
   async function fetchRange(from: Date, to: Date) {
     setLoading(true);
@@ -278,45 +281,48 @@ export function StatsDashboard({ summary: initialSummary, initialPreset, initial
           </div>
 
           <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
-            <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">방문 추이</h2>
+            <h2 className="text-[14px] font-bold text-[var(--color-ink)]">방문 추이</h2>
+            <p className="mb-3 text-[12px] text-[var(--color-ink-2)]">
+              선택한 기간 동안 하루 단위 방문자 수 변화입니다.
+            </p>
             <LineChart points={trendPoints} emptyMessage="아직 방문 기록이 없습니다." />
           </section>
 
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
-              <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">링크별 클릭수</h2>
-              <BarChart
-                items={summary.clicksByLink.map((item) => ({ label: item.title, value: item.count }))}
-                emptyMessage="아직 클릭 기록이 없습니다."
-              />
-            </section>
-
-            <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
-              <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">요일별 방문 분포</h2>
-              <BarChart
-                items={summary.weekdayDistribution.map((item) => ({
-                  label: item.weekday,
-                  value: item.count,
-                }))}
-                emptyMessage="아직 방문 기록이 없습니다."
-              />
-            </section>
-
-            <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
-              <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">링크트리 유입 출처</h2>
+              <h2 className="text-[14px] font-bold text-[var(--color-ink)]">링크트리 유입 출처</h2>
+              <p className="mb-3 text-[12px] text-[var(--color-ink-2)]">
+                방문자가 이 링크트리 페이지에 들어올 때 사용한 채널(utm_source) 또는 리퍼러 기준 방문 수입니다.
+              </p>
               <BarChart
                 items={summary.topReferrers.map((item) => ({ label: item.source, value: item.count }))}
                 emptyMessage="아직 유입 기록이 없습니다."
               />
             </section>
+
+            <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
+              <h2 className="text-[14px] font-bold text-[var(--color-ink)]">링크별 클릭수</h2>
+              <p className="mb-3 text-[12px] text-[var(--color-ink-2)]">등록된 링크별로 클릭된 횟수입니다.</p>
+              <BarChart
+                items={summary.clicksByLink.map((item) => ({ label: item.title, value: item.count }))}
+                emptyMessage="아직 클릭 기록이 없습니다."
+              />
+            </section>
           </div>
 
           <section className="rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]">
-            <h2 className="mb-3 text-[14px] font-bold text-[var(--color-ink)]">링크별 유입 경로</h2>
-            <LinkMediumTable
-              rows={summary.clicksByLinkAndMedium}
-              emptyMessage="아직 클릭 기록이 없습니다."
-            />
+            <h2 className="text-[14px] font-bold text-[var(--color-ink)]">링크별 유입 경로</h2>
+            <p className="mb-3 text-[12px] text-[var(--color-ink-2)]">
+              어떤 채널(utm_medium)로 들어온 방문자가 어떤 링크를 눌렀는지 보여줍니다. &quot;미지정&quot;은 이
+              링크트리 페이지 주소에 utm_medium이 없을 때의 기본값입니다.
+            </p>
+            <MediumDonutChart data={mediumShare} emptyMessage="아직 클릭 기록이 없습니다." />
+            <div className="mt-4">
+              <LinkMediumTable
+                rows={summary.clicksByLinkAndMedium}
+                emptyMessage="아직 클릭 기록이 없습니다."
+              />
+            </div>
           </section>
         </>
       )}

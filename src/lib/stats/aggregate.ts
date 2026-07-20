@@ -5,6 +5,7 @@ import type {
   LinkClickCount,
   LinkMediumBreakdown,
   LinkTitleRow,
+  MediumShare,
   PageviewsPeriodOverPeriod,
   ReferrerCount,
   StatsSummary,
@@ -138,6 +139,25 @@ export function aggregateClicksByLinkAndMedium(
       };
     })
     .sort((a, b) => b.total - a.total || byLocaleKo(a.title, b.title));
+}
+
+/**
+ * 링크별 교차 집계(`aggregateClicksByLinkAndMedium`의 결과)를 링크 구분 없이 utm_medium
+ * 기준으로만 다시 합산한다. 도넛차트처럼 "전체 유입 경로 비중"을 보여줄 때 사용 — "미지정"도
+ * 다른 medium과 동일하게 합산된다(별도 취급하지 않음).
+ */
+export function aggregateMediumShare(rows: LinkMediumBreakdown[]): MediumShare[] {
+  const countByMedium = new Map<string, number>();
+
+  for (const row of rows) {
+    for (const item of row.mediums) {
+      countByMedium.set(item.medium, (countByMedium.get(item.medium) ?? 0) + item.count);
+    }
+  }
+
+  return Array.from(countByMedium.entries())
+    .map(([medium, count]) => ({ medium, count }))
+    .sort((a, b) => b.count - a.count || byLocaleKo(a.medium, b.medium));
 }
 
 export function aggregateWeekdayDistribution(events: EventRow[]): WeekdayCount[] {

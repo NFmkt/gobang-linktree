@@ -13,6 +13,9 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
   const [social, setSocial] = useState<SocialItem[]>(initialSettings.social);
   const [affiliateEmail, setAffiliateEmail] = useState(initialSettings.affiliate_email);
   const [affiliateLabel, setAffiliateLabel] = useState(initialSettings.affiliate_label);
+  const [affiliateSheetUrl, setAffiliateSheetUrl] = useState(
+    initialSettings.affiliate_sheet_url ?? "",
+  );
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -37,6 +40,7 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
           social,
           affiliate_email: affiliateEmail,
           affiliate_label: affiliateLabel,
+          affiliate_sheet_url: affiliateSheetUrl,
         }),
       });
 
@@ -56,7 +60,7 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex max-w-[480px] flex-col gap-3 rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]"
+      className="mx-auto flex max-w-[480px] flex-col gap-3 rounded-[var(--r)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--sh-sm)]"
     >
       <h1 className="text-[18px] font-extrabold text-[var(--color-ink)]">사이트 설정</h1>
 
@@ -112,6 +116,17 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
           value={affiliateLabel}
           onChange={(event) => setAffiliateLabel(event.target.value)}
           required
+          className="focus-glow h-9 rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-border-strong)] bg-[var(--color-bg)] px-3 text-[14px] font-normal text-[var(--color-ink)] outline-none"
+        />
+      </label>
+
+      <label className="flex flex-col gap-1 text-[12.5px] font-semibold text-[var(--color-ink-2)]">
+        제휴 문의 시트 링크 (선택)
+        <input
+          type="url"
+          value={affiliateSheetUrl}
+          onChange={(event) => setAffiliateSheetUrl(event.target.value)}
+          placeholder="https://docs.google.com/spreadsheets/..."
           className="focus-glow h-9 rounded-[var(--r-sm)] border-[1.5px] border-[var(--color-border-strong)] bg-[var(--color-bg)] px-3 text-[14px] font-normal text-[var(--color-ink)] outline-none"
         />
       </label>

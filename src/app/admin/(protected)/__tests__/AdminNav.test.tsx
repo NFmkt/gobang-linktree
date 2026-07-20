@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 const usePathnameMock = vi.fn();
 
@@ -77,5 +77,96 @@ describe("AdminNav", () => {
       "/admin/settings",
     );
     expect(screen.getByRole("link", { name: "통계" })).toHaveAttribute("href", "/admin/stats");
+  });
+});
+
+describe("AdminNav 제휴 문의 탭", () => {
+  beforeEach(() => {
+    usePathnameMock.mockReturnValue("/admin/links");
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("시트 링크가 설정돼 있으면 클릭 시 새 탭으로 연다", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({ settings: { affiliate_sheet_url: "https://docs.google.com/sheet" } }),
+          { status: 200 },
+        ),
+      ),
+    );
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+
+    const { AdminNav } = await import("../AdminNav");
+    render(<AdminNav />);
+    fireEvent.click(screen.getByRole("button", { name: "제휴 문의" }));
+
+    await waitFor(() => {
+      expect(openSpy).toHaveBeenCalledWith(
+        "https://docs.google.com/sheet",
+        "_blank",
+        "noopener,noreferrer",
+      );
+    });
+  });
+
+  it("시트 링크가 비어있으면 클릭 시 안내 메시지를 띄운다", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ settings: { affiliate_sheet_url: "" } }), { status: 200 }),
+      ),
+    );
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+
+    const { AdminNav } = await import("../AdminNav");
+    render(<AdminNav />);
+    fireEvent.click(screen.getByRole("button", { name: "제휴 문의" }));
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith("관리자 설정에서 시트 링크를 먼저 등록하세요");
+    });
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it("설정 조회가 네트워크 오류로 실패해도 안내 메시지를 띄운다", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+
+    const { AdminNav } = await import("../AdminNav");
+    render(<AdminNav />);
+    fireEvent.click(screen.getByRole("button", { name: "제휴 문의" }));
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith("관리자 설정에서 시트 링크를 먼저 등록하세요");
+    });
+  });
+
+  it("시트 링크가 javascript: 스킴이면 새 탭을 열지 않고 안내 메시지를 띄운다", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ settings: { affiliate_sheet_url: "javascript:alert(1)" } }), {
+          status: 200,
+        }),
+      ),
+    );
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+
+    const { AdminNav } = await import("../AdminNav");
+    render(<AdminNav />);
+    fireEvent.click(screen.getByRole("button", { name: "제휴 문의" }));
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith("관리자 설정에서 시트 링크를 먼저 등록하세요");
+    });
+    expect(openSpy).not.toHaveBeenCalled();
   });
 });

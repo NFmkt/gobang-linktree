@@ -1,6 +1,62 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { LineChart } from "../LineChart";
+import { LineChart, LineChartTooltipContent } from "../LineChart";
+
+/**
+ * recharts의 <ResponsiveContainer>는 실제 브라우저에서 ResizeObserver로 부모 요소의
+ * 픽셀 크기를 측정해 차트 너비를 정한다. jsdom은 ResizeObserver를 구현하지 않고
+ * getBoundingClientRect도 항상 0을 반환하므로, 이 값들을 고정 크기로 모킹해야
+ * <ResponsiveContainer>가 렌더를 포기(null 반환)하지 않고 실제 SVG를 그린다.
+ * 이 모킹은 이 테스트 파일에만 스코프된다(vitest는 파일 단위로 격리되어 다른
+ * 테스트 파일의 전역에는 영향을 주지 않는다).
+ */
+class MockResizeObserver implements ResizeObserver {
+  #callback: ResizeObserverCallback;
+
+  constructor(callback: ResizeObserverCallback) {
+    this.#callback = callback;
+  }
+
+  observe(target: Element) {
+    this.#callback(
+      [{ target, contentRect: target.getBoundingClientRect() } as ResizeObserverEntry],
+      this,
+    );
+  }
+
+  unobserve() {}
+  disconnect() {}
+}
+
+let originalResizeObserver: typeof ResizeObserver | undefined;
+let originalGetBoundingClientRect: typeof Element.prototype.getBoundingClientRect;
+
+beforeAll(() => {
+  originalResizeObserver = window.ResizeObserver;
+  originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
+
+  window.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
+  Element.prototype.getBoundingClientRect = function () {
+    return {
+      width: 600,
+      height: 160,
+      top: 0,
+      left: 0,
+      right: 600,
+      bottom: 160,
+      x: 0,
+      y: 0,
+      toJSON() {
+        return {};
+      },
+    };
+  };
+});
+
+afterAll(() => {
+  window.ResizeObserver = originalResizeObserver as typeof ResizeObserver;
+  Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+});
 
 describe("LineChart", () => {
   it("포인트가 없으면 emptyMessage를 보여준다", () => {
@@ -8,8 +64,8 @@ describe("LineChart", () => {
     expect(screen.getByText("데이터가 없습니다.")).toBeInTheDocument();
   });
 
-  it("포인트 개수만큼 원(circle)을 렌더한다", () => {
-    render(
+  it("포인트가 있으면 접근성을 위한 role=img 컨테이너와 라인을 렌더한다", () => {
+    const { container } = render(
       <LineChart
         points={[
           { date: "2026-07-08", count: 1 },
@@ -19,19 +75,44 @@ describe("LineChart", () => {
         emptyMessage="데이터가 없습니다."
       />,
     );
-    const circles = document.querySelectorAll("circle");
-    expect(circles).toHaveLength(3);
+    expect(screen.getByRole("img", { name: "일별 방문 추이" })).toBeInTheDocument();
+    expect(container.querySelector(".recharts-line-curve")).toBeInTheDocument();
   });
 
-  it("접근성을 위한 aria-label을 가진 svg를 렌더한다", () => {
-    render(
-      <LineChart points={[{ date: "2026-07-10", count: 1 }]} emptyMessage="데이터가 없습니다." />,
+  it("포인트 개수만큼 dot(원형 마커)을 렌더한다(60개 이하)", () => {
+    const { container } = render(
+      <LineChart
+        points={[
+          { date: "2026-07-08", count: 1 },
+          { date: "2026-07-09", count: 3 },
+          { date: "2026-07-10", count: 2 },
+        ]}
+        emptyMessage="데이터가 없습니다."
+      />,
     );
-    expect(screen.getByRole("img", { name: "일별 방문 추이" })).toBeInTheDocument();
+    const dots = container.querySelectorAll(".recharts-line-dots .recharts-dot");
+    expect(dots).toHaveLength(3);
+  });
+
+  it("x축에 날짜 라벨(M/D 포맷)을 tick으로 표시한다", () => {
+    const { container } = render(
+      <LineChart
+        points={[
+          { date: "2026-07-08", count: 1 },
+          { date: "2026-07-09", count: 3 },
+          { date: "2026-07-10", count: 2 },
+        ]}
+        emptyMessage="데이터가 없습니다."
+      />,
+    );
+    const tickTexts = Array.from(
+      container.querySelectorAll(".recharts-xAxis-tick-labels .recharts-cartesian-axis-tick-value"),
+    ).map((el) => el.textContent);
+    expect(tickTexts).toEqual(["7/8", "7/9", "7/10"]);
   });
 
   it("포인트가 10개 이하(7일 뷰)면 각 포인트 위에 값을 직접 라벨로 표시한다", () => {
-    render(
+    const { container } = render(
       <LineChart
         points={[
           { date: "2026-07-08", count: 1 },
@@ -41,41 +122,163 @@ describe("LineChart", () => {
         emptyMessage="데이터가 없습니다."
       />,
     );
-    const labels = document.querySelectorAll("svg text");
-    expect(labels).toHaveLength(3);
-    expect(Array.from(labels).map((el) => el.textContent)).toEqual(["1", "3", "2"]);
+    const labels = Array.from(container.querySelectorAll(".recharts-label-list text")).map(
+      (el) => el.textContent,
+    );
+    expect(labels).toEqual(["1", "3", "2"]);
   });
 
-  it("포인트가 10개 초과(30일 뷰)면 개별 라벨 없이 최고/최근 캡션만 보여준다", () => {
+  it("포인트가 10개 초과(30일 뷰)면 개별 값 라벨 없이 최고/최근 캡션만 보여준다", () => {
     const points = Array.from({ length: 30 }, (_, i) => ({
       date: `2026-07-${String(i + 1).padStart(2, "0")}`,
       count: i === 14 ? 42 : i + 1,
     }));
-    render(<LineChart points={points} emptyMessage="데이터가 없습니다." />);
-    expect(document.querySelectorAll("svg text")).toHaveLength(0);
+    const { container } = render(<LineChart points={points} emptyMessage="데이터가 없습니다." />);
+    expect(container.querySelectorAll(".recharts-label-list")).toHaveLength(0);
     expect(screen.getByText(/최고 42/)).toBeInTheDocument();
     expect(screen.getByText(/최근 30/)).toBeInTheDocument();
   });
 
-  it("포인트가 60개를 초과하면(예: '전체' 프리셋) circle을 전혀 렌더하지 않고 폴리라인과 캡션만 남긴다", () => {
+  it("x축 눈금 개수는 포인트가 많아질수록 성기게 유지된다(라벨 겹침 방지)", () => {
+    const points30 = Array.from({ length: 30 }, (_, i) => ({
+      date: `2026-07-${String((i % 30) + 1).padStart(2, "0")}`,
+      count: i + 1,
+    }));
+    const points400 = Array.from({ length: 400 }, (_, i) => ({
+      date: `point-${i}`,
+      count: i % 5,
+    }));
+
+    const { container: container30 } = render(
+      <LineChart points={points30} emptyMessage="데이터가 없습니다." />,
+    );
+    const { container: container400 } = render(
+      <LineChart points={points400} emptyMessage="데이터가 없습니다." />,
+    );
+
+    const ticks30 = container30.querySelectorAll(
+      ".recharts-xAxis-tick-labels .recharts-cartesian-axis-tick-label",
+    );
+    const ticks400 = container400.querySelectorAll(
+      ".recharts-xAxis-tick-labels .recharts-cartesian-axis-tick-label",
+    );
+
+    // 30일 뷰든 400개짜리 "전체" 뷰든 눈금 개수가 겹치지 않을 정도로 적게 유지되어야 한다.
+    expect(ticks30.length).toBeLessThanOrEqual(10);
+    expect(ticks400.length).toBeLessThanOrEqual(10);
+  });
+
+  it("컨테이너 폭이 좁으면(모바일 등) 넓은 화면보다 눈금 목표치를 더 줄인다", () => {
+    const points30 = Array.from({ length: 30 }, (_, i) => ({
+      date: `2026-07-${String(i + 1).padStart(2, "0")}`,
+      count: i + 1,
+    }));
+
+    // 넓은 컨테이너(파일 스코프 기본 모킹, 600px) 기준 눈금 개수
+    const { container: wideContainer } = render(
+      <LineChart points={points30} emptyMessage="데이터가 없습니다." />,
+    );
+    const wideTicks = wideContainer.querySelectorAll(
+      ".recharts-xAxis-tick-labels .recharts-cartesian-axis-tick-label",
+    );
+
+    // 모바일 수준의 좁은 컨테이너(375px)로 이 테스트에서만 일시적으로 재모킹
+    const originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function () {
+      return {
+        width: 375,
+        height: 160,
+        top: 0,
+        left: 0,
+        right: 375,
+        bottom: 160,
+        x: 0,
+        y: 0,
+        toJSON() {
+          return {};
+        },
+      };
+    };
+
+    let narrowContainer: HTMLElement;
+    try {
+      narrowContainer = render(
+        <LineChart points={points30} emptyMessage="데이터가 없습니다." />,
+      ).container;
+    } finally {
+      Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    }
+
+    const narrowTicks = narrowContainer.querySelectorAll(
+      ".recharts-xAxis-tick-labels .recharts-cartesian-axis-tick-label",
+    );
+
+    expect(narrowTicks.length).toBeLessThan(wideTicks.length);
+    expect(narrowTicks.length).toBeLessThanOrEqual(5);
+  });
+
+  it("포인트가 60개를 초과하면(예: '전체' 프리셋) dot을 전혀 렌더하지 않고 라인과 캡션만 남긴다", () => {
     const points = Array.from({ length: 400 }, (_, i) => ({
       date: `point-${i}`,
       count: i === 200 ? 99 : i % 5,
     }));
-    render(<LineChart points={points} emptyMessage="데이터가 없습니다." />);
-    expect(document.querySelectorAll("circle")).toHaveLength(0);
-    expect(document.querySelector("polyline")).toBeInTheDocument();
+    const { container } = render(<LineChart points={points} emptyMessage="데이터가 없습니다." />);
+    expect(container.querySelectorAll(".recharts-dot")).toHaveLength(0);
+    expect(container.querySelector(".recharts-line-curve")).toBeInTheDocument();
     expect(screen.getByText(/최고 99/)).toBeInTheDocument();
   });
 
-  it("각 포인트의 circle에 날짜·값을 담은 title(툴팁)이 있다", () => {
-    render(
-      <LineChart
-        points={[{ date: "2026-07-10", count: 5 }]}
-        emptyMessage="데이터가 없습니다."
-      />,
-    );
-    const title = document.querySelector("circle title");
-    expect(title?.textContent).toBe("2026-07-10: 5");
+  describe("LineChartTooltipContent", () => {
+    it("hover 시(active) 날짜(label)와 값(value)을 표시한다", () => {
+      render(
+        <LineChartTooltipContent
+          active
+          label="2026-07-10"
+          coordinate={{ x: 0, y: 0 }}
+          accessibilityLayer={false}
+          activeIndex={null}
+          payload={[
+            {
+              value: 5,
+              dataKey: "count",
+              name: "count",
+              color: "var(--color-primary)",
+              payload: { date: "2026-07-10", count: 5 },
+              graphicalItemId: "count",
+            },
+          ]}
+        />,
+      );
+      expect(screen.getByText("2026-07-10")).toBeInTheDocument();
+      expect(screen.getByText("5")).toBeInTheDocument();
+    });
+
+    it("active가 false면 아무것도 렌더하지 않는다", () => {
+      const { container } = render(
+        <LineChartTooltipContent
+          active={false}
+          label="2026-07-10"
+          payload={[]}
+          coordinate={{ x: 0, y: 0 }}
+          accessibilityLayer={false}
+          activeIndex={null}
+        />,
+      );
+      expect(container).toBeEmptyDOMElement();
+    });
+
+    it("payload가 비어있으면 아무것도 렌더하지 않는다", () => {
+      const { container } = render(
+        <LineChartTooltipContent
+          active
+          label="2026-07-10"
+          payload={[]}
+          coordinate={{ x: 0, y: 0 }}
+          accessibilityLayer={false}
+          activeIndex={null}
+        />,
+      );
+      expect(container).toBeEmptyDOMElement();
+    });
   });
 });

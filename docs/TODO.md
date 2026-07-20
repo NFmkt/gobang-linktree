@@ -5,6 +5,7 @@
 > 개발 순서: S0 → S1 → (S2·S3 병렬) → (S4·S5 병렬) → S6 → S7
 
 ## 진행 현황
+- [x] **C — 관리자 UX 배치 2 (2026-07-18)** — Issues #1~#7, C1~C9 9개 태스크 전부 완료 + whole-branch 최종 리뷰(opus) Ready to merge. 브랜치 `feature/admin-ux-batch-2026-07-14`(아직 main 미병합). 아래 "관리자 UX 배치 2" 섹션 참조.
 - [x] **B — 통계 커스텀 날짜 범위 (2026-07-10)** — B1~B3 3개 슬라이스 전부 완료·머지. 아래 "통계 커스텀 날짜 범위" 섹션 참조.
 - [x] **A — 관리자 UX 개선 (2026-07-10)** — `/ui-ux-pro-max` 리뷰 기반, A1~A4 4개 슬라이스 전부 완료. 아래 "관리자 UX 개선" 섹션 참조.
 - [x] **RD 비비드 블루 리디자인 (2026-07-08)** — 테마 전환 완료. 아래 "리디자인" 섹션 참조.
@@ -16,6 +17,28 @@
 - [x] S5 관리자 사이트 설정 (AFK) — 리뷰 통과. `/admin/settings` 편집 → 공개 헤더/소셜/제휴 mailto/메타데이터/OG 즉시 반영.
 - [x] S6 요약 통계 대시보드 (AFK) — 리뷰 통과(Important 1건 반영 후 merge). KPI+클릭순위+7/30일 추이+유입출처+초기화.
 - [x] S7 브랜드 마감 (AFK) — 리뷰 통과. 파비콘·OG(한글 렌더 OK)·아이콘세트 확정·접근성 점검.
+
+---
+
+## C — 관리자 UX 배치 2 (2026-07-18, 완료 — main 미병합)
+
+> 통계 탭 그래프 UI 개선, 링크관리/사이트설정 UX, 제휴 문의 제출폼 신설 요청 → `@grill-me`로 스펙 확정(구글시트+Apps Script 웹훅 방식, 필드구성, 스팸방지, 관리자 노출 방식 등) → `@to-issues`로 GitHub Issues #1~#7 등록 → 3.5단계 리소스 승인(recharts 신규 의존성) → `@subagent-driven-development`로 C1~C9 순차 TDD 구현. 계획: `docs/superpowers/plans/2026-07-14-admin-ux-batch.md`.
+
+- [x] C1 통계 탭 컴포넌트 재배치 (Issue #1) — "요일별 방문 분포" 제거, 링크별 클릭수/유입출처 위치 교체
+- [x] C2 사이트 설정 폼 중앙 정렬 (Issue #4)
+- [x] C3 링크 관리 리스트 아코디언화 (Issue #3)
+- [x] C4 방문 추이 차트 recharts 전환 (Issue #2) — x축 날짜라벨/툴팁/좁은화면 tick 대응
+- [x] C5 링크별 유입경로 도넛차트 추가 (Issue #7)
+- [x] C6 관리자 "제휴 문의" 탭 + 시트 링크 설정 필드 (Issue #5) — `site_settings.affiliate_sheet_url` 마이그레이션
+- [x] C7 제휴 문의 API 라우트 (Issue #6 part1) — 허니팟+시간실엸 스팸방지, GAS 웹훅 포워딩
+- [x] C8 제휴 문의 폼 프론트엔드 (Issue #6 part2) — AffiliateButton 아코디언 + mailto 병기
+- [x] C9 Apps Script 배포 가이드 + docs/SPEC.md 갱신 (Issue #6 part3)
+
+### 구현 메모 (2026-07-18 완료)
+- 9개 태스크 전부 태스크별 리뷰(spec+quality) 승인 + whole-branch 최종 리뷰(opus) 1차 With fixes → 2차 Ready to merge: Yes. 상세는 `.superpowers/sdd/progress.md`·`HANDOFF.md` §6 참조.
+- **whole-branch 리뷰에서만 발견된 Critical**: `getSiteConfig.ts`가 신규 컬럼(`affiliate_sheet_url`)을 포함한 명시적 select 리스트를 쓰고 있어서, 마이그레이션 0005 적용 전에 배포되면 공개 홈페이지 전체가 500 — `.select("*")` + `?? ""` 폴백으로 수정.
+- **잔여 사용자 작업(사람만 가능)**: 마이그레이션 0005 Supabase 대시보드 적용, Apps Script 배포+웹훅 URL 환경변수 등록(`GAS_AFFILIATE_WEBHOOK_URL`), `/admin/stats` 375px 실브라우저 겹침 확인.
+- main 병합/배포는 사용자 확인 후 진행.
 
 ---
 

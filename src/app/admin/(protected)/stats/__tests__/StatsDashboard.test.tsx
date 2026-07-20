@@ -1,7 +1,31 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll, afterAll } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import type { StatsSummary } from "@/lib/stats/types";
 import { computePresetRange } from "@/lib/stats/dateRangePresets";
+
+/**
+ * 방문 추이 섹션은 recharts 기반 <LineChart>를 렌더한다. recharts의
+ * <ResponsiveContainer>는 실제로 ResizeObserver로 부모 크기를 측정해야 SVG를 그리는데,
+ * jsdom은 이를 구현하지 않아(getBoundingClientRect도 항상 0) 모킹이 없으면 차트가
+ * 아예 렌더되지 않는다. 이 모킹은 이 테스트 파일에만 스코프된다.
+ */
+class MockResizeObserver implements ResizeObserver {
+  #callback: ResizeObserverCallback;
+
+  constructor(callback: ResizeObserverCallback) {
+    this.#callback = callback;
+  }
+
+  observe(target: Element) {
+    this.#callback(
+      [{ target, contentRect: target.getBoundingClientRect() } as ResizeObserverEntry],
+      this,
+    );
+  }
+
+  unobserve() {}
+  disconnect() {}
+}
 
 const summaryWithData: StatsSummary = {
   totalPageviews: 42,
@@ -66,6 +90,36 @@ function expectedStatsUrl(from: Date, to: Date): string {
 }
 
 describe("StatsDashboard", () => {
+  let originalResizeObserver: typeof ResizeObserver | undefined;
+  let originalGetBoundingClientRect: typeof Element.prototype.getBoundingClientRect;
+
+  beforeAll(() => {
+    originalResizeObserver = window.ResizeObserver;
+    originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
+
+    window.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
+    Element.prototype.getBoundingClientRect = function () {
+      return {
+        width: 600,
+        height: 160,
+        top: 0,
+        left: 0,
+        right: 600,
+        bottom: 160,
+        x: 0,
+        y: 0,
+        toJSON() {
+          return {};
+        },
+      };
+    };
+  });
+
+  afterAll(() => {
+    window.ResizeObserver = originalResizeObserver as typeof ResizeObserver;
+    Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+  });
+
   beforeEach(() => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
   });
@@ -139,26 +193,36 @@ describe("StatsDashboard", () => {
     expect(screen.queryByText(/▲|▼/)).not.toBeInTheDocument();
   });
 
-  it("요일별 방문 분포 섹션을 렌더한다", async () => {
+  it("요일별 방문 분포 섹션은 더 이상 렌더하지 않는다", async () => {
     const { StatsDashboard } = await import("../StatsDashboard");
     render(<StatsDashboard {...defaultProps} />);
-    expect(screen.getByText("요일별 방문 분포")).toBeInTheDocument();
-    expect(screen.getByText("월")).toBeInTheDocument();
-    expect(screen.getByText("일")).toBeInTheDocument();
+    expect(screen.queryByText("요일별 방문 분포")).not.toBeInTheDocument();
   });
 
-  it("링크별 유입 경로 섹션을 렌더한다", async () => {
+  it("링크트리 유입 출처, 링크별 클릭수 섹션을 이 순서로 렌더한다", async () => {
+    const { StatsDashboard } = await import("../StatsDashboard");
+    render(<StatsDashboard {...defaultProps} />);
+    const headings = screen.getAllByRole("heading", { level: 2 }).map((el) => el.textContent);
+    const referrerIndex = headings.indexOf("링크트리 유입 출처");
+    const clicksByLinkIndex = headings.indexOf("링크별 클릭수");
+    expect(referrerIndex).toBeGreaterThanOrEqual(0);
+    expect(clicksByLinkIndex).toBeGreaterThan(referrerIndex);
+  });
+
+  it("링크별 유입 경로 섹션을 렌더한다(도넛차트 + 상세 테이블)", async () => {
     const { StatsDashboard } = await import("../StatsDashboard");
     render(<StatsDashboard {...defaultProps} />);
     expect(screen.getByText("링크별 유입 경로")).toBeInTheDocument();
-    expect(screen.getByText("social")).toBeInTheDocument();
+    // "social"은 도넛차트 범례와 상세 테이블 양쪽에 렌더된다.
+    expect(screen.getAllByText("social").length).toBe(2);
+    expect(screen.getByRole("img", { name: "유입 경로별 비중" })).toBeInTheDocument();
   });
 
-  it("유입 경로 기록이 없으면 empty message를 보여준다", async () => {
+  it("유입 경로 기록이 없으면 도넛차트와 테이블 양쪽에 empty message를 보여준다", async () => {
     const noMediums: StatsSummary = { ...summaryWithData, clicksByLinkAndMedium: [] };
     const { StatsDashboard } = await import("../StatsDashboard");
     render(<StatsDashboard {...defaultProps} summary={noMediums} />);
-    expect(screen.getByText("아직 클릭 기록이 없습니다.")).toBeInTheDocument();
+    expect(screen.getAllByText("아직 클릭 기록이 없습니다.").length).toBe(2);
   });
 
   it("데이터가 전혀 없으면 empty state를 보여준다", async () => {
@@ -172,6 +236,15 @@ describe("StatsDashboard", () => {
     render(<StatsDashboard {...defaultProps} />);
     expect(screen.getByText("방문 추이")).toBeInTheDocument();
     expect(document.querySelectorAll("circle")).toHaveLength(summaryWithData.dailyTrend.length);
+  });
+
+  it("그래프 섹션마다 무엇을 보여주는지 설명하는 캡션이 있다", async () => {
+    const { StatsDashboard } = await import("../StatsDashboard");
+    render(<StatsDashboard {...defaultProps} />);
+    expect(screen.getByText(/하루 단위 방문/)).toBeInTheDocument();
+    expect(screen.getByText(/이 링크트리 페이지에 들어올 때/)).toBeInTheDocument();
+    expect(screen.getByText(/등록된 링크별로 클릭된 횟수/)).toBeInTheDocument();
+    expect(screen.getByText(/utm_medium.*미지정/)).toBeInTheDocument();
   });
 
   it("초기 진입 시 '7일' 프리셋 버튼이 선택 상태(aria-pressed)로 표시된다", async () => {
