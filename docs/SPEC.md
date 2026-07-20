@@ -20,17 +20,15 @@
 | 언어 | 한국어 전용 |
 | 반응형 | **모바일 우선**, 데스크톱 대응 |
 
-## 3. 공개 링크페이지 구성
-- **프로필 헤더**: 로고(GYI 청록 마크) + 브랜드명 "고방" + bio "청년주택 청년혜택 자취 꿀정보"
-- **소셜 아이콘 줄** (3): 
-  - 공식 홈페이지 `https://gobang.kr/home?p=homeAdvertisingPopup`
-  - 블로그 `https://blog.naver.com/neoflat1116`
-  - 유튜브 `https://www.youtube.com/@youth_info`
-- **링크 버튼 목록** (초기 3 + 제휴):
+## 3. 공개 링크페이지 구성 (2026-07-19 기준, 실제 반영 상태)
+- **프로필 헤더**: 로고(`public/bi.png`) + 브랜드명 "고방" + bio "청년주택 청년혜택 자취 꿀정보" (비비드 블루 풀블리드 히어로, §7 참조)
+- **소셜 아이콘 줄** (5, 순서 고정): 공식 홈페이지 → 블로그 → 인스타그램 → 유튜브 → 카카오톡 오픈채팅
+- **링크 버튼 목록** (관리자에서 추가/수정/삭제/순서변경 가능, 아래는 현재 등록 상태 예시):
   1. 청년주택 공고 확인 → `https://gobang.kr/youth`
-  2. 청년혜택 모아보기 → `https://gobang.kr/feed`
-  3. 자취 꿀정보 → `https://gobang.kr/feed/series`
-  4. 제휴·협력 문의 → `mailto:` 버튼 (하단 고정)
+  2. 자취 꿀정보 → `https://gobang.kr/feed/series`
+  3. 청년혜택 모아보기 → `https://gobang.kr/feed`
+  4. (비활성) 광고 안내 팝업 → `https://gobang.kr/home?p=homeAdvertisingPopup`
+- **제휴·협력 문의**: 하단 고정 버튼, 상세는 §5 참조
 - **푸터**: 저작권 / 작은 로고
 - 헤더 요소(로고/브랜드명/bio/소셜링크) **전부 관리자에서 수정 가능**
 - 인스타 계정(참고): `https://www.instagram.com/gobang.kr`
@@ -59,22 +57,19 @@
   (`MailApp.sendEmail`)을 처리한다. 배포·설정 절차는 [docs/affiliate-inquiry-apps-script.md](affiliate-inquiry-apps-script.md) 참고.
 - 제휴 버튼 클릭수는 통계로 집계.
 
-## 6. 통계(Analytics)
-- **측정 이벤트**: 페이지뷰 / 링크별 클릭 / 유입출처.
-- **유입출처**: HTTP Referrer + UTM 파라미터 (인스타 링크에 `?utm_source=instagram` 태깅 운영법 함께 제공).
+## 6. 통계(Analytics) (2026-07-19 기준)
+- **측정 이벤트**: 페이지뷰 / 링크별 클릭. UTM(`utm_source`/`utm_medium`/`utm_campaign`)은 링크트리 페이지 자체의 URL 쿼리스트링에서 읽으며(개별 목적지 링크 URL이 아님), pageview·click 이벤트 양쪽에 함께 실린다.
+- **유입출처**: pageview 시점의 `utm_source` 또는 (없으면) HTTP Referrer 호스트/"직접 방문".
+- **링크별 유입 경로**: click 시점의 `utm_medium`(도넛차트 + 상세 표). 값이 없으면 "미지정".
 - **클릭 기록 방식**: **비콘(`navigator.sendBeacon`)** — 클릭 즉시 이동 + 백그라운드 전송.
-- **관리자 대시보드(요약)**: ①총 방문수 ②링크별 클릭수 순위 ③최근 7/30일 추이 ④유입출처 top.
+- **관리자 대시보드(`/admin/stats`)**: ①총 방문수/총 클릭수/클릭률 KPI(기간 대비 증감 배지) ②방문 추이(recharts 라인차트, 기간별 일별 추이) ③링크별 클릭수 ④링크트리 유입 출처 ⑤링크별 유입 경로(도넛차트+표) ⑥기간 필터(오늘/7일/30일/이번달/지난달/전체 프리셋 + 커스텀 범위) ⑦CSV 다운로드(선택 기간만) ⑧수동 삭제/초기화.
 - **보관**: 무기한. 관리자에서 **수동 삭제/초기화** 가능.
 - **개인정보**: 익명 집계 — IP 원문 저장 안 함, referrer/utm/링크id만.
 
 ## 7. 기타
 - **OG 태그**: 공유 미리보기(로고+제목+bio) 세팅.
-- **파비콘**: GYI 청록 로고 기반 (icon-design).
-- **브랜드 컬러**: 청록/틸 계열(로고 기준 ~`#20B6B6`) → 디자인 시스템 메인.
+- **파비콘**: 블루 하우스 마크 (icon-design, fill 전용 다색).
+- **브랜드 컬러**: **비비드 블루**(`#1B4DFF` 계열, 2026-07-08 리디자인 이후 확정) — 상세는 [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)가 Source of Truth.
 
-## 8. 다음 단계 (CLAUDE.md 파이프라인)
-- [x] 1단계: 스펙 확정 (본 문서)
-- [ ] 2단계: 디자인 시스템 고정 — `@ui-ux-pro-max` 틸 기반 테마 2~3안 제안 → 컨펌
-- [ ] 3단계: `@to-issues` 수직 슬라이스 분할 + 승인
-- [ ] 3.5단계: 리소스 체크리스트 승인
-- [ ] 4단계: 서브에이전트 TDD + `@frontend-design` 구현
+## 8. 진행 상태
+S0~S7 전체 슬라이스 + 관리자 UX 개선(A/B/C 배치) 완료·배포됨. 현재 개발 파이프라인 진행 이력은 [docs/TODO.md](TODO.md) 참조.

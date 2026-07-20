@@ -32,6 +32,7 @@
 - **Server Component에서 `try{...}` 블록 안에 JSX를 직접 반환하지 말 것**: ESLint `react-hooks/error-boundaries` 위반. 데이터 fetch/에러 캡처만 try 안에서 하고, JSX 반환은 try/catch 밖에서 조건 분기.
 - **App Router에서 폴더명이 `_`로 시작하면 private folder 취급 → 라우트 미생성**(빌드 에러도 없이 조용히 404). 임시 진단 라우트에도 언더스코어 접두 피할 것.
 - **OG 이미지 한글 렌더**: Satori 기본 폰트에 한글 없음 → `src/app/fonts/`의 Pretendard `.otf`를 fs로 직접 읽어 넘김(node_modules 직접 참조 금지, 서버리스 번들 누락 위험).
+- **Tailwind 스캔 범위**: `globals.css`가 `@import "tailwindcss" source("..")`로 `src/`만 스캔하도록 제한돼 있음. 이 줄을 지우면 리포 루트 `.md` 문서에 적힌 Tailwind 문법 예시(예: `bg-[var(--color-...)]`)까지 후보 클래스로 오인해 CSS 파싱이 깨지고 dev 서버가 500을 낼 수 있다.
 
 ## 알려진 미해결 이슈
 - **⚠️ `ADMIN_PASSWORD`(구 값 `nfmkt`)가 과거 `HANDOFF.md` 커밋들을 통해 public repo git 히스토리에 노출됨**(파일 자체는 이후 gitignore 처리했지만 과거 커밋 diff에는 남아있음). 사용자가 "보류, 나중에 직접 처리"로 결정한 상태 — 다음 작업 시 아직 해결 안 됐으면 비번 로테이션/히스토리 재작성을 제안할 것.
