@@ -25,13 +25,20 @@ const OUTER_RADIUS = 80;
  * 이 배열보다 많아지면 색상이 순환 재사용된다 — 인접 슬라이스가 같은 색이 될 수 있지만
  * 범례의 라벨/퍼센트 텍스트로 여전히 구분 가능하다.
  */
+/**
+ * dataviz 스킬로 검증한 8슬롯 정성적(qualitative) 팔레트(--mode light, CVD-safe 순서 고정).
+ * 슬롯1은 브랜드 블루(--color-primary) 재사용, 슬롯2~8은 src/app/globals.css의
+ * --chart-cat-2~8. 순서를 섞지 말 것 — 인접 슬롯 간 색약 구분성이 이 순서에서만 보장된다.
+ */
 const SLICE_COLORS = [
   "var(--color-primary)",
-  "var(--color-good)",
-  "var(--color-danger)",
-  "var(--color-primary-deep)",
-  "var(--color-primary-press)",
-  "var(--color-muted)",
+  "var(--chart-cat-2)",
+  "var(--chart-cat-3)",
+  "var(--chart-cat-4)",
+  "var(--chart-cat-5)",
+  "var(--chart-cat-6)",
+  "var(--chart-cat-7)",
+  "var(--chart-cat-8)",
 ];
 
 function formatPercent(count: number, total: number): string {

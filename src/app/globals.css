@@ -32,6 +32,21 @@
   --color-danger: #ca2b30;
   --color-good: #1fb07a;
 
+  /*
+   * ── 차트 카테고리 팔레트 (dataviz 스킬 검증 완료, --mode light) ──
+   * 유입경로 도넛차트 등 다범주(카테고리 8개+) 시각화 전용. 슬롯1은 브랜드 블루
+   * (--color-primary) 재사용, 슬롯2~8은 CVD-safe 순서로 고정(순서를 섞지 말 것).
+   * --color-danger/--color-good(상태색)와는 의도적으로 분리된 별도 토큰 —
+   * 상태색을 "범주 4"처럼 재사용하지 않는다.
+   */
+  --chart-cat-2: #008300;
+  --chart-cat-3: #e87ba4;
+  --chart-cat-4: #eda100;
+  --chart-cat-5: #1baf7a;
+  --chart-cat-6: #eb6834;
+  --chart-cat-7: #4a3aa7;
+  --chart-cat-8: #e34948;
+
   /* ── 라운딩 ── */
   --r-sm: 12px;
   --r: 18px;
@@ -59,6 +74,13 @@
   --color-on-primary: var(--color-on-primary);
   --color-danger: var(--color-danger);
   --color-good: var(--color-good);
+  --chart-cat-2: var(--chart-cat-2);
+  --chart-cat-3: var(--chart-cat-3);
+  --chart-cat-4: var(--chart-cat-4);
+  --chart-cat-5: var(--chart-cat-5);
+  --chart-cat-6: var(--chart-cat-6);
+  --chart-cat-7: var(--chart-cat-7);
+  --chart-cat-8: var(--chart-cat-8);
 
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, sans-serif;
 

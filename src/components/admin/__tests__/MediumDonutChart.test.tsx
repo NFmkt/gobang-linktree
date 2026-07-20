@@ -107,6 +107,19 @@ describe("MediumDonutChart", () => {
     expect(container.querySelectorAll(".recharts-pie-sector")).toHaveLength(3);
   });
 
+  it("카테고리가 8개까지는 색상이 서로 겹치지 않고, 9번째부터 순환한다", () => {
+    const mediums = Array.from({ length: 9 }, (_, i) => ({ medium: `m${i}`, count: 1 }));
+    const { container } = render(
+      <MediumDonutChart data={mediums} emptyMessage="아직 클릭 기록이 없습니다." />,
+    );
+    const fills = Array.from(container.querySelectorAll(".recharts-pie-sector path")).map((path) =>
+      path.getAttribute("fill"),
+    );
+    expect(fills).toHaveLength(9);
+    expect(new Set(fills.slice(0, 8)).size).toBe(8);
+    expect(fills[8]).toBe(fills[0]);
+  });
+
   describe("MediumDonutChartTooltipContent", () => {
     it("hover 시(active) medium 이름과 값을 표시한다", () => {
       render(
