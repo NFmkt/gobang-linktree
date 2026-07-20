@@ -3,7 +3,6 @@
 이 문서는 상위 [../../CLAUDE.md](../../CLAUDE.md)의 규칙을 상속합니다. 신규 작업(새 슬라이스, 리팩터, 버그 수정) 시작 전 반드시 상위 문서의 4단계 파이프라인(기획·grill-me → 디자인 → 이슈 분할 → 리소스 승인 → 서브에이전트 TDD)을 그대로 따르십시오. 아래는 이 프로젝트에만 적용되는 구체 규칙·함정입니다.
 
 ## 문서 맵
-- **인수인계/이력**: [HANDOFF.md](HANDOFF.md) (gitignore됨, 로컬 전용 — 새 세션/계정에서는 이 파일이 없을 수 있음)
 - **스펙**: [docs/SPEC.md](docs/SPEC.md)
 - **디자인 시스템(SoT)**: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md)
 - **개발 슬라이스 TODO**: [docs/TODO.md](docs/TODO.md)
@@ -18,7 +17,7 @@
   - 린트: `npm run lint` (`next lint`는 Next 16에서 제거됨 — `eslint` 직접 실행)
   - 빌드: `npx next build`
   - 프리뷰 서버명(launch.json): `gobang-linktree` (port 3939)
-- **`.env.local` 필요**: Supabase URL/anon/service_role + `ADMIN_PASSWORD`. gitignore됨 — 새 세션에서는 `.env.example` 참고해 재구성하거나 기존 값을 전달받을 것.
+- **`.env.local` 필요**: Supabase URL/anon/service_role + `ADMIN_PASSWORD` + `GAS_AFFILIATE_WEBHOOK_URL`(제휴 문의 폼 → Google Apps Script 웹훅, 없으면 해당 API가 500). gitignore됨 — 새 세션에서는 `.env.example` 참고해 재구성하거나 기존 값을 전달받을 것.
 
 ## 이 프로젝트만의 함정 (반드시 지킬 것)
 - **`middleware.ts`가 아니라 `src/proxy.ts`**: Next.js 16.2.10부터 "middleware" 컨벤션이 deprecated, "proxy"로 대체됨(파일명·export 함수명 둘 다). 관리자 라우트(`/admin/*`, `/api/admin/*`) 보호 로직이 여기 있음.
@@ -33,6 +32,9 @@
 - **App Router에서 폴더명이 `_`로 시작하면 private folder 취급 → 라우트 미생성**(빌드 에러도 없이 조용히 404). 임시 진단 라우트에도 언더스코어 접두 피할 것.
 - **OG 이미지 한글 렌더**: Satori 기본 폰트에 한글 없음 → `src/app/fonts/`의 Pretendard `.otf`를 fs로 직접 읽어 넘김(node_modules 직접 참조 금지, 서버리스 번들 누락 위험).
 - **Tailwind 스캔 범위**: `globals.css`가 `@import "tailwindcss" source("..")`로 `src/`만 스캔하도록 제한돼 있음. 이 줄을 지우면 리포 루트 `.md` 문서에 적힌 Tailwind 문법 예시(예: `bg-[var(--color-...)]`)까지 후보 클래스로 오인해 CSS 파싱이 깨지고 dev 서버가 500을 낼 수 있다.
+- **공개 페이지가 읽는 설정/데이터 조회는 항상 `select("*")`를 쓸 것, 명시적 컬럼 리스트 금지**: Supabase 마이그레이션은 CLI push가 안 되고 대시보드에서 수동 적용하는 구조라, "코드는 배포됐지만 마이그레이션은 아직 안 적용됨" 상태가 실제로 발생한다(`getSiteConfig.ts`가 신규 컬럼을 명시적으로 select하고 있어서 이 순서 문제 하나로 공개 홈페이지 전체가 500 났던 사례 있음, `?? 기본값`으로 폴백). 관리자 전용 API(`select("*")` 이미 관행)는 이 문제에 안전하지만 공개 페이지 쪽 데이터 조회 함수를 새로 만들거나 컬럼을 추가할 때 반드시 이 패턴을 따를 것.
+- **recharts 컴포넌트 테스트**: jsdom은 `ResizeObserver`/실측 `getBoundingClientRect`가 없어서 `<ResponsiveContainer>`가 렌더를 포기함 — `LineChart.test.tsx`/`MediumDonutChart.test.tsx`의 `MockResizeObserver` + `getBoundingClientRect` 오버라이드(파일 스코프 `beforeAll`/`afterAll`) 패턴을 그대로 재사용할 것. 새 recharts 컴포넌트를 테스트할 때 매번 새로 고안하지 말 것(현재 파일마다 중복돼 있음 — 공유 헬퍼로 뽑는 건 후속 과제).
+- **공개 익명 POST 폼의 스팸 방지 패턴**: 허니팟 hidden input(off-screen 배치, `aria-hidden`+`tabIndex=-1`, `display:none` 대신) + 폼 렌더~제출 사이 최소 시간(현재 3초) 검증. 걸리면 400이 아니라 **조용히 200**을 반환하고 실제 처리(웹훅/DB 등)는 건너뛴다(`/api/affiliate-inquiries` 참고) — 스팸 봇에게 실패를 알려주지 않는 게 의도.
 
 ## 알려진 미해결 이슈
 - **⚠️ `ADMIN_PASSWORD`(구 값 `nfmkt`)가 과거 `HANDOFF.md` 커밋들을 통해 public repo git 히스토리에 노출됨**(파일 자체는 이후 gitignore 처리했지만 과거 커밋 diff에는 남아있음). 사용자가 "보류, 나중에 직접 처리"로 결정한 상태 — 다음 작업 시 아직 해결 안 됐으면 비번 로테이션/히스토리 재작성을 제안할 것.
