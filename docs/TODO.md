@@ -5,7 +5,7 @@
 > 개발 순서: S0 → S1 → (S2·S3 병렬) → (S4·S5 병렬) → S6 → S7
 
 ## 진행 현황
-- [x] **C — 관리자 UX 배치 2 (2026-07-18)** — Issues #1~#7, C1~C9 9개 태스크 전부 완료 + whole-branch 최종 리뷰(opus) Ready to merge. 브랜치 `feature/admin-ux-batch-2026-07-14`(아직 main 미병합). 아래 "관리자 UX 배치 2" 섹션 참조.
+- [x] **C — 관리자 UX 배치 2 (2026-07-18)** — Issues #1~#7, C1~C9 9개 태스크 전부 완료 + whole-branch 최종 리뷰(opus) Ready to merge. main에 병합·배포 완료(2026-07-19, merge `48ea7ad`). 아래 "관리자 UX 배치 2" 섹션 참조.
 - [x] **B — 통계 커스텀 날짜 범위 (2026-07-10)** — B1~B3 3개 슬라이스 전부 완료·머지. 아래 "통계 커스텀 날짜 범위" 섹션 참조.
 - [x] **A — 관리자 UX 개선 (2026-07-10)** — `/ui-ux-pro-max` 리뷰 기반, A1~A4 4개 슬라이스 전부 완료. 아래 "관리자 UX 개선" 섹션 참조.
 - [x] **RD 비비드 블루 리디자인 (2026-07-08)** — 테마 전환 완료. 아래 "리디자인" 섹션 참조.
@@ -20,7 +20,7 @@
 
 ---
 
-## C — 관리자 UX 배치 2 (2026-07-18, 완료 — main 미병합)
+## C — 관리자 UX 배치 2 (2026-07-18, 완료 — 2026-07-19 main 병합/배포)
 
 > 통계 탭 그래프 UI 개선, 링크관리/사이트설정 UX, 제휴 문의 제출폼 신설 요청 → `@grill-me`로 스펙 확정(구글시트+Apps Script 웹훅 방식, 필드구성, 스팸방지, 관리자 노출 방식 등) → `@to-issues`로 GitHub Issues #1~#7 등록 → 3.5단계 리소스 승인(recharts 신규 의존성) → `@subagent-driven-development`로 C1~C9 순차 TDD 구현. 계획: `docs/superpowers/plans/2026-07-14-admin-ux-batch.md`.
 
@@ -38,7 +38,7 @@
 - 9개 태스크 전부 태스크별 리뷰(spec+quality) 승인 + whole-branch 최종 리뷰(opus) 1차 With fixes → 2차 Ready to merge: Yes. 상세는 `.superpowers/sdd/progress.md`·`HANDOFF.md` §6 참조.
 - **whole-branch 리뷰에서만 발견된 Critical**: `getSiteConfig.ts`가 신규 컬럼(`affiliate_sheet_url`)을 포함한 명시적 select 리스트를 쓰고 있어서, 마이그레이션 0005 적용 전에 배포되면 공개 홈페이지 전체가 500 — `.select("*")` + `?? ""` 폴백으로 수정.
 - **잔여 사용자 작업(사람만 가능)**: 마이그레이션 0005 Supabase 대시보드 적용, Apps Script 배포+웹훅 URL 환경변수 등록(`GAS_AFFILIATE_WEBHOOK_URL`), `/admin/stats` 375px 실브라우저 겹침 확인.
-- main 병합/배포는 사용자 확인 후 진행.
+- ✅ main 병합/배포 완료(2026-07-19, merge commit `48ea7ad`). Vercel 프로덕션 GAS_AFFILIATE_WEBHOOK_URL 등록·재배포 완료.
 
 ---
 
