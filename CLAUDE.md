@@ -36,8 +36,8 @@
 - **recharts 컴포넌트 테스트**: jsdom은 `ResizeObserver`/실측 `getBoundingClientRect`가 없어서 `<ResponsiveContainer>`가 렌더를 포기함 — `LineChart.test.tsx`/`MediumDonutChart.test.tsx`의 `MockResizeObserver` + `getBoundingClientRect` 오버라이드(파일 스코프 `beforeAll`/`afterAll`) 패턴을 그대로 재사용할 것. 새 recharts 컴포넌트를 테스트할 때 매번 새로 고안하지 말 것(현재 파일마다 중복돼 있음 — 공유 헬퍼로 뽑는 건 후속 과제).
 - **공개 익명 POST 폼의 스팸 방지 패턴**: 허니팟 hidden input(off-screen 배치, `aria-hidden`+`tabIndex=-1`, `display:none` 대신) + 폼 렌더~제출 사이 최소 시간(현재 3초) 검증. 걸리면 400이 아니라 **조용히 200**을 반환하고 실제 처리(웹훅/DB 등)는 건너뛴다(`/api/affiliate-inquiries` 참고) — 스팸 봇에게 실패를 알려주지 않는 게 의도.
 
-## 알려진 미해결 이슈
-- **⚠️ `ADMIN_PASSWORD`(구 값 `nfmkt`)가 과거 `HANDOFF.md` 커밋들을 통해 public repo git 히스토리에 노출됨**(파일 자체는 이후 gitignore 처리했지만 과거 커밋 diff에는 남아있음). 사용자가 "보류, 나중에 직접 처리"로 결정한 상태 — 다음 작업 시 아직 해결 안 됐으면 비번 로테이션/히스토리 재작성을 제안할 것.
+## 알려진 이슈 (해결됨)
+- ~~`ADMIN_PASSWORD`(구 값 `nfmkt`)가 과거 `HANDOFF.md` 커밋들을 통해 public repo git 히스토리에 노출됨~~ → **사용자가 비밀번호를 새 값으로 로테이션해서 해결(2026-07-20)**. 옛 값은 git 히스토리에 여전히 남아있지만 이미 무효한 값이라 실질적 위험 없음. 히스토리 자체에서 문자열을 지우는 건(rewrite) 위생 차원의 선택사항으로 남아있음(필요 시 제안).
 
 ## 폴더 구조
 Next.js App Router 표준(`src/app`, `src/components`, `src/lib`) + `docs/`(스펙·설계·계획) + `supabase/migrations/`(SQL) + `public/`(정적 에셋). 상위 CLAUDE.md의 `src/`·`tests/`·`docs/`·`public/` 일반 원칙보다 이 프레임워크 표준 구조가 우선.
