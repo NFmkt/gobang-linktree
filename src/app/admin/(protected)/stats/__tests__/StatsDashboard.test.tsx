@@ -238,6 +238,15 @@ describe("StatsDashboard", () => {
     expect(document.querySelectorAll("circle")).toHaveLength(summaryWithData.dailyTrend.length);
   });
 
+  it("그래프 섹션마다 무엇을 보여주는지 설명하는 캡션이 있다", async () => {
+    const { StatsDashboard } = await import("../StatsDashboard");
+    render(<StatsDashboard {...defaultProps} />);
+    expect(screen.getByText(/하루 단위 방문/)).toBeInTheDocument();
+    expect(screen.getByText(/이 링크트리 페이지에 들어올 때/)).toBeInTheDocument();
+    expect(screen.getByText(/등록된 링크별로 클릭된 횟수/)).toBeInTheDocument();
+    expect(screen.getByText(/utm_medium.*미지정/)).toBeInTheDocument();
+  });
+
   it("초기 진입 시 '7일' 프리셋 버튼이 선택 상태(aria-pressed)로 표시된다", async () => {
     const { StatsDashboard } = await import("../StatsDashboard");
     render(<StatsDashboard {...defaultProps} />);
