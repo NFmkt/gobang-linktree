@@ -25,7 +25,8 @@
 1. 방금 만든 스프레드시트에서 상단 메뉴 **확장 프로그램(Extensions) → Apps Script**를 클릭한다.
 2. 기본 생성된 `Code.gs`(또는 `myFunction` 뼈대)의 내용을 전부 지우고 아래 코드를 붙여넣는다.
 3. **⚠️ 코드 상단의 `NOTIFY_EMAIL`을 실제 운영자 수신 이메일로 반드시 바꿔야 한다.** 그대로 두면 알림 메일이
-   발송되지 않는다(또는 존재하지 않는 주소로 실패한다).
+   발송되지 않는다(또는 존재하지 않는 주소로 실패한다). 여러 명이 동시에 받아야 하면 쉼표로 구분해 나열한다
+   (`MailApp.sendEmail`은 `to` 인자에 쉼표로 구분된 다중 수신자 문자열을 그대로 지원한다).
 
 ```javascript
 /**
@@ -43,7 +44,8 @@
  */
 
 // ⚠️ 반드시 실제 운영자 이메일로 변경하십시오. 알림을 받을 주소입니다.
-const NOTIFY_EMAIL = "YOUR_EMAIL_HERE";
+// 여러 명에게 보내려면 쉼표로 구분해 나열하십시오 (예: "a@example.com,b@example.com").
+const NOTIFY_EMAIL = "lneleovvnae@neoflat.net,archoit94@neoflat.net";
 
 // 문의유형 코드 → 시트/이메일에 표시할 한글 라벨
 const INQUIRY_TYPE_LABELS = {
@@ -63,17 +65,23 @@ function doPost(e) {
     const inquiryTypeLabel = INQUIRY_TYPE_LABELS[inquiryTypeRaw] || inquiryTypeRaw || "(미지정)";
     const message = payload.message || "";
     const submittedAt = payload.submittedAt || new Date().toISOString();
+    // 서버(Vercel)는 UTC ISO 문자열을 보낸다 — 한국 시간(KST, UTC+9)으로 변환해 표시.
+    const submittedAtKst = Utilities.formatDate(
+      new Date(submittedAt),
+      "Asia/Seoul",
+      "yyyy-MM-dd HH:mm:ss",
+    ) + " (KST)";
 
     // 1) 시트에 한 행 추가 — 헤더 순서(제출일시/회사명/전화/이메일/문의유형/문의내용)와 동일하게 맞춘다.
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
-    sheet.appendRow([submittedAt, companyName, phone, email, inquiryTypeLabel, message]);
+    sheet.appendRow([submittedAtKst, companyName, phone, email, inquiryTypeLabel, message]);
 
     // 2) 운영자에게 알림 메일 발송
     const subject = `[고방 링크트리] 새 제휴 문의 - ${companyName} (${inquiryTypeLabel})`;
     const body = [
-      "제휴·협력 문의가 새로 접수되었습니다.",
+      "고방 링크트리에서 제휴·협력 문의가 새로 접수되었습니다.",
       "",
-      `제출일시: ${submittedAt}`,
+      `제출일시: ${submittedAtKst}`,
       `회사명: ${companyName}`,
       `전화: ${phone || "(미입력)"}`,
       `이메일: ${email || "(미입력)"}`,
@@ -136,5 +144,6 @@ GAS_AFFILIATE_WEBHOOK_URL=https://script.google.com/macros/s/여기에발급받�
 1. 배포 완료 후 사이트의 "제휴·협력 문의" 버튼을 눌러 아코디언을 펼치고, 폼을 실제로 제출해본다.
    (폼은 렌더된 지 3초 이상 지나야 전송되도록 스팸 방지 딜레이가 걸려 있으므로, 버튼을 누르자마자 바로
    제출하면 서버가 조용히 성공 응답만 하고 실제로는 시트/메일에 아무 기록도 남기지 않는다 — 정상 동작이다.)
-2. 스프레드시트에 새 행이 추가됐는지, `NOTIFY_EMAIL`로 알림 메일이 도착했는지 확인한다.
+2. 스프레드시트에 새 행이 추가됐는지, `NOTIFY_EMAIL`에 나열한 주소 전원(현재: `lneleovvnae@neoflat.net`,
+   `archoit94@neoflat.net`)에게 알림 메일이 도착했는지 확인한다.
 3. 안 되면 Apps Script 편집기의 **실행(Executions)** 로그에서 `doPost` 실행 기록과 에러를 확인한다.
