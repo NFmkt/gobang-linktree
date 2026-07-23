@@ -48,7 +48,7 @@ export function LinkButton({ link, delayMs }: LinkButtonProps) {
           {link.title}
         </span>
         {link.subtitle ? (
-          <span className="mt-0.5 truncate text-[13.5px] leading-tight text-[var(--color-ink-2)]">
+          <span className="mt-1 truncate text-[13.5px] leading-snug text-[var(--color-ink-2)]">
             {link.subtitle}
           </span>
         ) : null}
